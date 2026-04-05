@@ -9,7 +9,7 @@ const express = require('express');
 const router = express.Router();
 const tempKeyController = require('../controllers/tempKeyController');
 const { authenticateApiKey, checkApiKeyPermissions } = require('../middleware/apiKeyMiddleware');
-const { authenticate } = require('../middleware/authMiddleware');
+const { protect: authenticate } = require('../middleware/authMiddleware');
 
 // Generate a temporary key for an envelope (accessible via API key or user authentication)
 router.post(
