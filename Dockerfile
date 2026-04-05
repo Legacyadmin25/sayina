@@ -15,10 +15,10 @@ RUN mkdir -p uploads/documents uploads/logos
 
 # Set environment variables
 ENV NODE_ENV=production
-ENV PORT=5000
+# PORT is intentionally NOT hardcoded — Railway injects it at runtime
 
-# Expose port
-EXPOSE 5000
+# Expose Railway's dynamic port
+EXPOSE ${PORT:-3000}
 
-# Start the application
-CMD ["npm", "start"]
+# Run migrations then start server
+CMD ["sh", "-c", "npm run migrate && npm start"]
