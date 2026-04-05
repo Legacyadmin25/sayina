@@ -45,15 +45,13 @@ const logger = winston.createLogger({
   ]
 });
 
-// If we're not in production, also log to the console
-if (process.env.NODE_ENV !== 'production') {
-  logger.add(new winston.transports.Console({
-    format: winston.format.combine(
-      winston.format.colorize(),
-      winston.format.simple()
-    )
-  }));
-}
+// Always log to console — Railway/cloud platforms capture stdout for logs and healthcheck monitoring
+logger.add(new winston.transports.Console({
+  format: winston.format.combine(
+    winston.format.colorize(),
+    winston.format.simple()
+  )
+}));
 
 // Create a stream object with a write function that will be used by Morgan
 logger.stream = {
