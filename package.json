@@ -48,6 +48,8 @@
     "rate-limit-redis": "^4.2.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
+    "form-data": "^4.0.0",
+    "tesseract.js": "^5.0.3",
     "objection": "^3.1.2",
     "pdf-lib": "^1.17.1",
     "pg": "^8.11.3",
