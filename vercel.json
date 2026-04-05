@@ -1,0 +1,9 @@
+{
+  "buildCommand": "cd sayina-web && npm install && npm run build",
+  "outputDirectory": "sayina-web/.next",
+  "installCommand": "echo skip",
+  "framework": "nextjs",
+  "env": {
+    "NEXT_PUBLIC_API_URL": "https://api.sayina.co.za"
+  }
+}
