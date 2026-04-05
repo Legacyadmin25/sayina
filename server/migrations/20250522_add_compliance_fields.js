@@ -15,11 +15,15 @@ exports.up = function(knex) {
       }
     }),
     
-    // Add compliance fields to audit_trail table
-    knex.schema.alterTable('audit_trail', table => {
-      table.timestamp('compliance_given_at').nullable();
-      table.text('compliance_via').nullable();
-      table.boolean('compliance_given').nullable();
+    // Add compliance fields to audit_trail table (if it exists)
+    knex.schema.hasTable('audit_trail').then(exists => {
+      if (exists) {
+        return knex.schema.alterTable('audit_trail', table => {
+          table.timestamp('compliance_given_at').nullable();
+          table.text('compliance_via').nullable();
+          table.boolean('compliance_given').nullable();
+        });
+      }
     }),
     
     // Add compliance fields to signers table
@@ -45,11 +49,15 @@ exports.down = function(knex) {
       }
     }),
     
-    // Remove compliance fields from audit_trail table
-    knex.schema.alterTable('audit_trail', table => {
-      table.dropColumn('compliance_given_at');
-      table.dropColumn('compliance_via');
-      table.dropColumn('compliance_given');
+    // Remove compliance fields from audit_trail table (if it exists)
+    knex.schema.hasTable('audit_trail').then(exists => {
+      if (exists) {
+        return knex.schema.alterTable('audit_trail', table => {
+          table.dropColumn('compliance_given_at');
+          table.dropColumn('compliance_via');
+          table.dropColumn('compliance_given');
+        });
+      }
     }),
     
     // Remove compliance fields from signers table
