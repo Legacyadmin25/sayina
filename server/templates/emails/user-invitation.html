@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>You've been invited to join {{organizationName}} on Sayina</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .logo {
+            max-height: 60px;
+            margin-bottom: 20px;
+        }
+        .content {
+            padding: 20px 0;
+        }
+        .button {
+            display: inline-block;
+            background-color: #3a86ff;
+            color: white !important;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .credentials {
+            background-color: #f7f7f7;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .credential-item {
+            margin-bottom: 10px;
+        }
+        .credential-label {
+            font-weight: bold;
+        }
+        .credential-value {
+            font-family: monospace;
+            background-color: #eee;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        .invitation {
+            background-color: #e6f3ff;
+            border-left: 4px solid #3a86ff;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px 0;
+            font-size: 12px;
+            color: #777;
+            border-top: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            {{#if organizationLogo}}
+            <img src="{{organizationLogo}}" alt="{{organizationName}}" class="logo">
+            {{else}}
+            <h2>{{organizationName}}</h2>
+            {{/if}}
+        </div>
+        
+        <div class="content">
+            <h2>You've been invited to join {{organizationName}}</h2>
+            
+            <p>Hello {{name}},</p>
+            
+            <div class="invitation">
+                <p><strong>{{inviterName}}</strong> has invited you to join <strong>{{organizationName}}</strong> on Sayina E-Signature Service as a <strong>{{role}}</strong>.</p>
+            </div>
+            
+            <p>Sayina is a secure e-signature platform that allows you to sign documents electronically in compliance with South African regulations.</p>
+            
+            <p>To get started, use the temporary login credentials below:</p>
+            
+            <div class="credentials">
+                <div class="credential-item">
+                    <span class="credential-label">Email:</span> 
+                    <span class="credential-value">{{to}}</span>
+                </div>
+                <div class="credential-item">
+                    <span class="credential-label">Temporary Password:</span> 
+                    <span class="credential-value">{{tempPassword}}</span>
+                </div>
+                <p><em>Note: You will be asked to change your password after your first login.</em></p>
+            </div>
+            
+            <p>Click the button below to log in:</p>
+            
+            <div style="text-align: center;">
+                <a href="{{loginUrl}}" class="button">Log In to Sayina</a>
+            </div>
+            
+            <p>If you have any questions, please contact {{inviterName}} or the Sayina support team.</p>
+            
+            <p>Welcome aboard!</p>
+            
+            <p>Best regards,<br>
+            The {{organizationName}} Team</p>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; {{year}} {{organizationName}}. All rights reserved.</p>
+            <p>This is an automated message sent on behalf of {{organizationName}}.</p>
+            <p>Powered by Sayina E-Signature Service</p>
+        </div>
+    </div>
+</body>
+</html>

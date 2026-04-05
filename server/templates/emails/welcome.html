@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to {{organizationName}} E-Signature Service</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .logo {
+            max-height: 60px;
+            margin-bottom: 20px;
+        }
+        .content {
+            padding: 20px 0;
+        }
+        .button {
+            display: inline-block;
+            background-color: #3a86ff;
+            color: white !important;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .features {
+            background-color: #f7f7f7;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .feature {
+            margin-bottom: 15px;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px 0;
+            font-size: 12px;
+            color: #777;
+            border-top: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            {{#if organizationLogo}}
+            <img src="{{organizationLogo}}" alt="{{organizationName}}" class="logo">
+            {{else}}
+            <h2>{{organizationName}}</h2>
+            {{/if}}
+        </div>
+        
+        <div class="content">
+            <h2>Welcome to {{organizationName}} E-Signature Service!</h2>
+            
+            <p>Hello {{name}},</p>
+            
+            <p>Thank you for registering with {{organizationName}} E-Signature Service. We're excited to have you on board!</p>
+            
+            <p>With our platform, you can:</p>
+            
+            <div class="features">
+                <div class="feature">✓ Create and send documents for electronic signature</div>
+                <div class="feature">✓ Track the status of your documents in real-time</div>
+                <div class="feature">✓ Securely store and manage your signed documents</div>
+                <div class="feature">✓ Comply with South African electronic signature regulations</div>
+                <div class="feature">✓ Save time and reduce paper waste</div>
+            </div>
+            
+            <p>To get started, click the button below to log in to your account:</p>
+            
+            <div style="text-align: center;">
+                <a href="{{loginUrl}}" class="button">Log In to Your Account</a>
+            </div>
+            
+            <p>If you have any questions or need assistance, please don't hesitate to contact our support team.</p>
+            
+            <p>Thank you for choosing {{organizationName}} E-Signature Service!</p>
+            
+            <p>Best regards,<br>
+            The {{organizationName}} Team</p>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; {{year}} {{organizationName}}. All rights reserved.</p>
+            <p>This email was sent to you because you registered for an account with {{organizationName}} E-Signature Service.</p>
+        </div>
+    </div>
+</body>
+</html>

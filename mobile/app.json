@@ -1,0 +1,67 @@
+{
+  "expo": {
+    "name": "Sayina E-Signature",
+    "slug": "sayina-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#DAB44A"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.sayina.esignature",
+      "buildNumber": "1.0.0",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Sayina uses Face ID to securely access your account and sensitive documents.",
+        "NSCameraUsageDescription": "Sayina needs access to your camera to scan documents and capture signatures.",
+        "NSPhotoLibraryUsageDescription": "Sayina needs access to your photo library to upload documents for signing."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#DAB44A"
+      },
+      "package": "com.sayina.esignature",
+      "versionCode": 1,
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Sayina uses Face ID to securely access your account and sensitive documents."
+        }
+      ],
+      [
+        "expo-document-picker",
+        {
+          "iCloudContainerEnvironment": "Production"
+        }
+      ],
+      "expo-notifications"
+    ],
+    "scheme": "sayina",
+    "extra": {
+      "eas": {
+        "projectId": "sayina-esignature"
+      }
+    }
+  }
+}

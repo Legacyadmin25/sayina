@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  # API Server
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sayina-api
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=sayina
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres_password
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=your_jwt_secret_key_here
+      - JWT_REFRESH_SECRET=your_refresh_token_secret_here
+      - API_URL=http://localhost:5000
+      - CLIENT_URL=http://localhost:3000
+    volumes:
+      - ./uploads:/app/uploads
+    networks:
+      - sayina-network
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:14-alpine
+    container_name: sayina-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres_password
+      - POSTGRES_DB=sayina
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - sayina-network
+
+  # Redis for OTP and caching
+  redis:
+    image: redis:7-alpine
+    container_name: sayina-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - sayina-network
+
+  # Frontend (optional, uncomment when frontend is ready)
+  # frontend:
+  #   build:
+  #     context: ./client
+  #     dockerfile: Dockerfile
+  #   container_name: sayina-frontend
+  #   restart: unless-stopped
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - api
+  #   networks:
+  #     - sayina-network
+
+networks:
+  sayina-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  redis-data:

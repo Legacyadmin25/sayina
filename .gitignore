@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+client/node_modules/
+sayina-web/node_modules/
+mobile/node_modules/
+
+# Environment variables - NEVER commit these
+.env
+.env.local
+.env.production
+.env.*.local
+sayina-web/.env.local
+sayina-web/.env.production.local
+client/.env
+client/.env.local
+
+# Build outputs
+sayina-web/.next/
+sayina-web/out/
+client/dist/
+client/build/
+mobile/.expo/
+mobile/dist/
+
+# Uploads directory (user files)
+uploads/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test coverage
+coverage/
+
+# Temporary files
+*.tmp
+*.temp

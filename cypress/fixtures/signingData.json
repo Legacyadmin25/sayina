@@ -1,0 +1,40 @@
+{
+  "envelope": {
+    "id": "12345",
+    "name": "Test Contract Agreement",
+    "fileUrl": "/fixtures/sample-document.pdf",
+    "orgId": "98765432-9876-9876-9876-987654321def"
+  },
+  "signer": {
+    "id": 1,
+    "email": "testsigner@example.com",
+    "phone": "+27123456789",
+    "firstName": "Test",
+    "lastName": "Signer"
+  },
+  "fields": [
+    {
+      "id": "field-1",
+      "type": "signature",
+      "page": 1,
+      "x": 100,
+      "y": 400,
+      "width": 200,
+      "height": 50,
+      "required": true,
+      "signerId": 1
+    },
+    {
+      "id": "field-2",
+      "type": "date",
+      "page": 1,
+      "x": 350,
+      "y": 400,
+      "width": 150,
+      "height": 40,
+      "required": true,
+      "signerId": 1
+    }
+  ],
+  "requiresOTP": true
+}

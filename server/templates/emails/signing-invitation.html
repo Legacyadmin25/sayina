@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{#if isReminder}}Reminder: {{/if}}Please Sign "{{envelopeName}}"</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .logo {
+            max-height: 60px;
+            margin-bottom: 20px;
+        }
+        .content {
+            padding: 20px 0;
+        }
+        .button {
+            display: inline-block;
+            background-color: #3a86ff;
+            color: white !important;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .documents {
+            background-color: #f7f7f7;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .document {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        .document-icon {
+            margin-right: 10px;
+            color: #3a86ff;
+        }
+        .message {
+            background-color: #e6f3ff;
+            border-left: 4px solid #3a86ff;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .reminder {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            color: #856404;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px 0;
+            font-size: 12px;
+            color: #777;
+            border-top: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            {{#if organizationLogo}}
+            <img src="{{organizationLogo}}" alt="{{organizationName}}" class="logo">
+            {{else}}
+            <h2>{{organizationName}}</h2>
+            {{/if}}
+        </div>
+        
+        <div class="content">
+            {{#if isReminder}}
+            <div class="reminder">
+                <p><strong>Reminder:</strong> You have a document waiting for your signature.</p>
+            </div>
+            {{/if}}
+            
+            <h2>{{#if isReminder}}Reminder: {{/if}}Please Sign "{{envelopeName}}"</h2>
+            
+            <p>Hello {{name}},</p>
+            
+            <p>{{#if isReminder}}This is a reminder that you{{else}}You{{/if}} have been requested to sign the following document(s) from {{organizationName}}:</p>
+            
+            <div class="documents">
+                {{#each documents}}
+                <div class="document">
+                    <span class="document-icon">📄</span>
+                    <span>{{this}}</span>
+                </div>
+                {{/each}}
+            </div>
+            
+            {{#if envelopeMessage}}
+            <div class="message">
+                <p><strong>Message:</strong> {{envelopeMessage}}</p>
+            </div>
+            {{/if}}
+            
+            {{#if customMessage}}
+            <div class="message">
+                <p><strong>Additional message:</strong> {{customMessage}}</p>
+            </div>
+            {{/if}}
+            
+            <p>To review and sign the document(s), please click the button below:</p>
+            
+            <div style="text-align: center;">
+                <a href="{{signingUrl}}" class="button">Review & Sign Documents</a>
+            </div>
+            
+            <p>Alternatively, you can copy and paste the following URL into your browser:</p>
+            
+            <p style="word-break: break-all;">{{signingUrl}}</p>
+            
+            <p>This signing link is unique to you and should not be shared with others.</p>
+            
+            <p>Thank you,<br>
+            {{organizationName}}</p>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; {{year}} {{organizationName}}. All rights reserved.</p>
+            <p>This is an automated message sent on behalf of {{organizationName}}.</p>
+            <p>Powered by Sayina E-Signature Service</p>
+        </div>
+    </div>
+</body>
+</html>
