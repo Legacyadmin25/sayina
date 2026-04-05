@@ -6,7 +6,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Step4Props, Field, Signer } from '@/lib/types/envelope';
 
 // Import PDFViewer dynamically to prevent SSR issues with react-pdf
-const PDFViewer = dynamic(() => import('@/components/ui/PDFViewer'), { 
+const PDFViewer = dynamic(() => import('@/components/ui/PDF/PDFViewer'), {
   ssr: false,
   loading: () => (
     <div className="w-full h-[400px] flex items-center justify-center bg-secondary-50">
