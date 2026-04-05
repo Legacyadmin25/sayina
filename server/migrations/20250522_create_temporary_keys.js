@@ -4,7 +4,7 @@
 
 exports.up = function(knex) {
   return knex.schema.createTable('temporary_keys', (table) => {
-    table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v4()'));
+    table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
     table.string('key').notNullable().unique();
     table.uuid('envelope_id').notNullable().references('id').inTable('envelopes').onDelete('CASCADE');
     table.uuid('signer_id').nullable().references('id').inTable('signers').onDelete('CASCADE');
