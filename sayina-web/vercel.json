@@ -1,5 +1,7 @@
 {
   "framework": "nextjs",
+  "installCommand": "npm install",
+  "buildCommand": "npm run build",
   "outputDirectory": ".next",
   "env": {
     "NEXT_PUBLIC_API_URL": "https://api.sayina.co.za"
