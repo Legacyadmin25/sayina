@@ -328,9 +328,10 @@ export default function PDFViewer({
 
       {/* PDF Viewer */}
       <div className="flex-1 relative">
-        <DocumentViewer 
-          file={pdfSource} 
-          onLoadSuccess={handleDocumentLoadSuccess}
+        {mode === 'builder' ? (
+          <FieldPlacer
+            file={pdfSource}
+            onLoadSuccess={handleDocumentLoadSuccess}
             currentPage={currentPage}
             scale={scale}
             activeTool={activeTool}
