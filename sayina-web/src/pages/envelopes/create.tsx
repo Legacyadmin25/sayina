@@ -6,10 +6,10 @@ import { Button } from '@/components/ui/Button';
 import { EnvelopeState, Signer, Field } from '@/lib/types/envelope';
 
 // Import step components
-import Step1Upload from './steps/Step1Upload';
-import Step2Signers from './steps/Step2Signers';
-import Step3Fields from './steps/Step3Fields';
-import Step4Review from './steps/Step4Review';
+import Step1Upload from '@/components/envelopes/steps/Step1Upload';
+import Step2Signers from '@/components/envelopes/steps/Step2Signers';
+import Step3Fields from '@/components/envelopes/steps/Step3Fields';
+import Step4Review from '@/components/envelopes/steps/Step4Review';
 
 // Types imported from @/lib/types/envelope.ts
 
