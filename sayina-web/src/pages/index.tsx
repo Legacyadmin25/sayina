@@ -2,6 +2,7 @@ import Head from 'next/head';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
+import { Header } from '@/components/layout/Header';
 
 export default function Home() {
   return (
@@ -11,32 +12,7 @@ export default function Home() {
         <meta name="description" content="Sayina is a locally-hosted, legally compliant South African e-signature platform—delivered as a responsive PWA and native apps." />
       </Head>
       
-      <header className="bg-white shadow-sm fixed w-full z-10">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <Image 
-              src="/logo-192.png.svg"
-              alt="Sayina Logo"
-              width={40}
-              height={40}
-              className="rounded-full"
-            />
-            <span className="text-xl font-bold text-secondary-900">Sayina</span>
-          </div>
-          <nav className="hidden md:flex items-center gap-6">
-            <Link href="/features" className="text-secondary-600 hover:text-secondary-900">Features</Link>
-            <Link href="/pricing" className="text-secondary-600 hover:text-secondary-900">Pricing</Link>
-            <Link href="/compliance" className="text-secondary-600 hover:text-secondary-900">Compliance</Link>
-            <Link href="/contact" className="text-secondary-600 hover:text-secondary-900">Contact</Link>
-          </nav>
-          <div className="flex items-center gap-4">
-            <Link href="/auth/login" className="text-primary-500 hover:text-primary-600">Log In</Link>
-            <Button size="sm" as={Link} href="/auth/signup">
-              Sign Up
-            </Button>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       <main>
         {/* Hero Section */}
@@ -50,12 +26,12 @@ export default function Home() {
                 A Proudly South African E-signature platform that ensures your documents are signed in compliance with South African regulations.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" as={Link} href="/auth/signup">
-                  Get Started Free
-                </Button>
-                <Button size="lg" variant="outline" as={Link} href="/demo">
-                  Request Demo
-                </Button>
+                <Link href="/auth/signup">
+                  <Button size="lg">Get Started Free</Button>
+                </Link>
+                <Link href="/demo">
+                  <Button size="lg" variant="outline">Request Demo</Button>
+                </Link>
               </div>
             </div>
             <div className="md:w-1/2">
@@ -131,15 +107,15 @@ export default function Home() {
             <p className="text-white text-lg max-w-2xl mx-auto mb-8">
               Join thousands of South African businesses who trust Sayina for their e-signature needs.
             </p>
-            <Button 
-              size="lg" 
-              variant="secondary"
-              className="bg-white text-primary-500 hover:bg-secondary-100"
-              as={Link} 
-              href="/auth/signup"
-            >
-              Start Your Free Trial
-            </Button>
+            <Link href="/auth/signup">
+              <Button
+                size="lg"
+                variant="secondary"
+                className="bg-white text-primary-500 hover:bg-secondary-100"
+              >
+                Start Your Free Trial
+              </Button>
+            </Link>
           </div>
         </section>
       </main>

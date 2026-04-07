@@ -1,5 +1,6 @@
 import Head from 'next/head';
 import Link from 'next/link';
+import { Header } from '@/components/layout/Header';
 
 const tiers = [
   {
@@ -44,15 +45,7 @@ export default function Pricing() {
         <meta name="description" content="Simple, transparent pricing for South African businesses." />
       </Head>
 
-      <header className="bg-white shadow-sm fixed w-full z-10">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/" className="text-xl font-bold text-secondary-900">Sayina</Link>
-          <div className="flex items-center gap-4">
-            <Link href="/auth/login" className="text-primary-500 hover:text-primary-600">Log In</Link>
-            <Link href="/auth/signup" className="bg-primary-500 text-white px-4 py-2 rounded-lg hover:bg-primary-600">Sign Up</Link>
-          </div>
-        </div>
-      </header>
+      <Header activePage="pricing" />
 
       <main className="pt-24 pb-20">
         <section className="bg-gradient-to-b from-primary-50 to-white py-16">

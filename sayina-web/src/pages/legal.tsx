@@ -1,5 +1,5 @@
 import Head from 'next/head';
-import Link from 'next/link';
+import { Header } from '@/components/layout/Header';
 
 export default function Legal() {
   return (
@@ -8,12 +8,7 @@ export default function Legal() {
         <title>Legal & Terms of Service - Sayina E-Signature</title>
       </Head>
 
-      <header className="bg-white shadow-sm fixed w-full z-10">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/" className="text-xl font-bold text-secondary-900">Sayina</Link>
-          <Link href="/auth/login" className="text-primary-500 hover:text-primary-600">Log In</Link>
-        </div>
-      </header>
+      <Header />
 
       <main className="pt-24 pb-20">
         <div className="container mx-auto px-4 max-w-3xl py-12">

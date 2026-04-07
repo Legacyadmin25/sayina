@@ -1,4 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
-  <rect width="192" height="192" rx="32" fill="#3B82F6"/>
-  <text x="96" y="115" font-family="Arial, sans-serif" font-size="72" font-weight="bold" text-anchor="middle" fill="white">S</text>
+  <!-- Gold circle background -->
+  <circle cx="96" cy="96" r="96" fill="#DAB44A"/>
+  <!-- Inner lighter ring -->
+  <circle cx="96" cy="96" r="80" fill="#E6C673" fill-opacity="0.3"/>
+  <!-- Feather/pen icon -->
+  <g transform="translate(96,96)">
+    <!-- Pen nib -->
+    <path d="M-8 32 L0 44 L8 32 L0 30 Z" fill="white" opacity="0.95"/>
+    <!-- Pen body -->
+    <path d="M-18 -30 Q0 -48 18 -30 L8 32 L-8 32 Z" fill="white" opacity="0.95"/>
+    <!-- Pen highlight -->
+    <path d="M-10 -28 Q0 -42 6 -26 L2 0 L-8 0 Z" fill="white" opacity="0.2"/>
+    <!-- Ink line -->
+    <line x1="0" y1="32" x2="0" y2="44" stroke="#DAB44A" stroke-width="2"/>
+    <!-- Pen tip line -->
+    <line x1="-8" y1="32" x2="8" y2="32" stroke="#c7a342" stroke-width="1.5"/>
+  </g>
+  <!-- "S" lettermark subtle overlay -->
+  <text x="96" y="170" font-family="Georgia, serif" font-size="18" font-weight="bold" text-anchor="middle" fill="white" opacity="0.8" letter-spacing="3">SAYINA</text>
 </svg>
