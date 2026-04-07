@@ -140,7 +140,7 @@ export default function SignEnvelope() {
         <meta name="description" content="Sign your document securely with Sayina" />
       </Head>
       <ToastProvider />
-      {showWatermark && <Watermark text="SAYINA FREE TIER" />}
+      {showWatermark && <Watermark show={true} />}
 
       <Modal isOpen={showOTPModal} onClose={() => setShowOTPModal(false)} title="Identity Verification" size="sm">
         <div className="py-2">

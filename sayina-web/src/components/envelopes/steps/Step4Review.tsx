@@ -68,11 +68,10 @@ export default function Step4Review({ data, onBack, onSubmit }: Step4Props) {
               <h3 className="text-md font-medium text-secondary-900 mb-2">Document Preview</h3>
               <div className="border rounded-lg h-[400px] overflow-hidden">
                 {data.file ? (
-                  <PDFViewer 
-                    file={data.file} 
-                    fields={data.fields} 
-                    onChange={() => {}} 
-                    readOnly={true}
+                  <PDFViewer
+                    file={data.file}
+                    fields={data.fields}
+                    mode="signer"
                     watermark="PREVIEW"
                   />
                 ) : (

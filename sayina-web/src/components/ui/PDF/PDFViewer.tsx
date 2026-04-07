@@ -330,8 +330,6 @@ export default function PDFViewer({
       <div className="flex-1 relative">
         {mode === 'builder' ? (
           <FieldPlacer
-            file={pdfSource}
-            onLoadSuccess={handleDocumentLoadSuccess}
             currentPage={currentPage}
             scale={scale}
             activeTool={activeTool}
@@ -339,20 +337,15 @@ export default function PDFViewer({
             setIsPlacing={setIsPlacing}
             activeSignerId={activeSignerId}
             fields={fields}
-            onFieldsChange={handleFieldChange}
-            onDocumentLoadSuccess={handleDocumentLoadSuccess}
-            watermark={watermark}
+            onChange={handleFieldChange}
           />
         ) : (
           <FieldInteractor
-            pdfUrl={(showTranslated && translatedUrl) ? translatedUrl : (pdfSource as string)}
             currentPage={currentPage}
             scale={scale}
             fields={fields}
             signerId={signerId}
-            onSignSubmit={handleSignSubmit}
-            onDocumentLoadSuccess={handleDocumentLoadSuccess}
-            watermark={watermark}
+            onSubmit={handleSignSubmit}
           />
         )}
       </div>
