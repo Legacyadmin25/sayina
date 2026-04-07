@@ -79,7 +79,7 @@ export default function Demo() {
                   <ul className="space-y-4">
                     {[
                       { title: '30-minute call', desc: 'A focused walkthrough of the features relevant to your business.' },
-                      { title: 'Live demonstration', desc: 'We'll send and sign a real document during the call.' },
+                      { title: 'Live demonstration', desc: "We'll send and sign a real document during the call." },
                       { title: 'Compliance Q&A', desc: 'Ask anything about ECT Act, POPIA, and audit trails.' },
                       { title: 'Pricing overview', desc: 'Get a clear picture of which plan fits your team size.' },
                     ].map((item) => (
