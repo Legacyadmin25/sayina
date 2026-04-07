@@ -54,7 +54,12 @@ export default function Signup() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Signup failed');
-      router.push('/auth/verify-otp?email=' + encodeURIComponent(form.email));
+      // Save name locally so dashboard can greet the user
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('sayina_user_name', form.fullName);
+        localStorage.setItem('sayina_user_email', form.email);
+      }
+      router.push('/auth/verify-otp?email=' + encodeURIComponent(form.email) + '&name=' + encodeURIComponent(form.fullName));
     } catch (err: any) {
       setErrors(prev => ({ ...prev, form: err.message || 'Something went wrong. Please try again.' }));
     } finally {

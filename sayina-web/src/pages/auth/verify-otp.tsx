@@ -6,7 +6,7 @@ import { useRouter } from 'next/router';
 
 export default function VerifyOtp() {
   const router = useRouter();
-  const { email } = router.query;
+  const { email, name } = router.query;
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -67,11 +67,20 @@ export default function VerifyOtp() {
       if (!res.ok) {
         setError(data.message || 'Invalid or expired code. Please try again.');
       } else {
-        // Success — redirect to dashboard
+        // Save user info so dashboard can personalise
+        if (typeof window !== 'undefined') {
+          if (data.token) localStorage.setItem('token', data.token);
+          if (name) localStorage.setItem('sayina_user_name', Array.isArray(name) ? name[0] : name);
+          if (email) localStorage.setItem('sayina_user_email', Array.isArray(email) ? email[0] : email);
+        }
         router.push('/dashboard');
       }
     } catch {
       // If no backend yet, simulate success for demo
+      if (typeof window !== 'undefined') {
+        if (name) localStorage.setItem('sayina_user_name', Array.isArray(name) ? name[0] : name);
+        if (email) localStorage.setItem('sayina_user_email', Array.isArray(email) ? email[0] : email);
+      }
       router.push('/dashboard');
     } finally {
       setLoading(false);
