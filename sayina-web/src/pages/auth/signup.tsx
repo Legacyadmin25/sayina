@@ -62,32 +62,8 @@ export default function Signup() {
     }
   };
 
-  const Field = ({ id, label, type = 'text', placeholder = '', addon }: { id: keyof typeof form; label: string; type?: string; placeholder?: string; addon?: string }) => (
-    <div>
-      <label htmlFor={id} className="block text-sm font-medium text-secondary-700 mb-1">{label}</label>
-      {addon ? (
-        <div className="flex">
-          <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-secondary-300 bg-secondary-50 text-secondary-500 text-sm">{addon}</span>
-          <input
-            id={id} name={id} type={type}
-            value={form[id] as string}
-            onChange={handleChange}
-            placeholder={placeholder}
-            className={`flex-1 border rounded-r-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${errors[id] ? 'border-red-400' : 'border-secondary-300'}`}
-          />
-        </div>
-      ) : (
-        <input
-          id={id} name={id} type={type}
-          value={form[id] as string}
-          onChange={handleChange}
-          placeholder={placeholder}
-          className={`w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${errors[id] ? 'border-red-400' : 'border-secondary-300'}`}
-        />
-      )}
-      {errors[id] && <p className="mt-1 text-xs text-red-500">{errors[id]}</p>}
-    </div>
-  );
+  const inputClass = (field: string) =>
+    `w-full border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${errors[field] ? 'border-red-400' : 'border-secondary-300'}`;
 
   return (
     <>
@@ -119,15 +95,90 @@ export default function Signup() {
               <div className="mb-5 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">{errors.form}</div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <Field id="fullName" label="Full Name" placeholder="Jane Smith" />
-              <Field id="email" label="Email Address" type="email" placeholder="jane@company.co.za" />
-              <Field id="organization" label="Organisation (Optional)" placeholder="Acme Pty Ltd" />
-              <Field id="phone" label="Phone Number" placeholder="821234567" addon="+27" />
-              <div className="text-xs text-secondary-400 -mt-2">We'll send a verification code to this number</div>
-              <Field id="password" label="Password" type="password" placeholder="Min. 8 characters" />
-              <Field id="confirmPassword" label="Confirm Password" type="password" placeholder="Repeat password" />
+            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
 
+              {/* Full Name */}
+              <div>
+                <label htmlFor="fullName" className="block text-sm font-medium text-secondary-700 mb-1">Full Name</label>
+                <input
+                  id="fullName" name="fullName" type="text"
+                  value={form.fullName} onChange={handleChange}
+                  placeholder="Jane Smith"
+                  autoComplete="name"
+                  className={inputClass('fullName')}
+                />
+                {errors.fullName && <p className="mt-1 text-xs text-red-500">{errors.fullName}</p>}
+              </div>
+
+              {/* Email */}
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-secondary-700 mb-1">Email Address</label>
+                <input
+                  id="email" name="email" type="email"
+                  value={form.email} onChange={handleChange}
+                  placeholder="jane@company.co.za"
+                  autoComplete="email"
+                  className={inputClass('email')}
+                />
+                {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
+              </div>
+
+              {/* Organisation */}
+              <div>
+                <label htmlFor="organization" className="block text-sm font-medium text-secondary-700 mb-1">Organisation (Optional)</label>
+                <input
+                  id="organization" name="organization" type="text"
+                  value={form.organization} onChange={handleChange}
+                  placeholder="Acme Pty Ltd"
+                  autoComplete="organization"
+                  className={inputClass('organization')}
+                />
+              </div>
+
+              {/* Phone */}
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-secondary-700 mb-1">Phone Number</label>
+                <div className="flex">
+                  <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-secondary-300 bg-secondary-50 text-secondary-500 text-sm select-none">+27</span>
+                  <input
+                    id="phone" name="phone" type="tel"
+                    value={form.phone} onChange={handleChange}
+                    placeholder="821234567"
+                    autoComplete="tel-national"
+                    className={`flex-1 border rounded-r-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${errors.phone ? 'border-red-400' : 'border-secondary-300'}`}
+                  />
+                </div>
+                {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone}</p>}
+                <p className="mt-1 text-xs text-secondary-400">{"We'll send a verification code to this number"}</p>
+              </div>
+
+              {/* Password */}
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-secondary-700 mb-1">Password</label>
+                <input
+                  id="password" name="password" type="password"
+                  value={form.password} onChange={handleChange}
+                  placeholder="Min. 8 characters"
+                  autoComplete="new-password"
+                  className={inputClass('password')}
+                />
+                {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password}</p>}
+              </div>
+
+              {/* Confirm Password */}
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-secondary-700 mb-1">Confirm Password</label>
+                <input
+                  id="confirmPassword" name="confirmPassword" type="password"
+                  value={form.confirmPassword} onChange={handleChange}
+                  placeholder="Repeat password"
+                  autoComplete="new-password"
+                  className={inputClass('confirmPassword')}
+                />
+                {errors.confirmPassword && <p className="mt-1 text-xs text-red-500">{errors.confirmPassword}</p>}
+              </div>
+
+              {/* Checkboxes */}
               <div className="space-y-3 pt-1">
                 <label className="flex items-start gap-2 cursor-pointer">
                   <input
