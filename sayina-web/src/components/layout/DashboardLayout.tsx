@@ -2,10 +2,8 @@ import Head from 'next/head';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect, ReactNode } from 'react';
-import { Button } from '@/components/ui/Button';
-import { Modal } from '@/components/ui/Modal';
 
-type ActivePage = 'dashboard' | 'envelopes' | 'templates' | 'contacts' | 'account';
+export type ActivePage = 'dashboard' | 'envelopes' | 'templates' | 'contacts' | 'reports' | 'account' | 'billing';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -14,10 +12,11 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ children, title = 'Dashboard', activePage }: DashboardLayoutProps) {
-  const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [userName, setUserName] = useState('');
   const [userInitials, setUserInitials] = useState('');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [greeting, setGreeting] = useState('Good morning');
+  const [envelopeCount] = useState(0); // Will come from API in future
 
   useEffect(() => {
     const storedName = localStorage.getItem('sayina_user_name') || '';
@@ -29,9 +28,18 @@ export function DashboardLayout({ children, title = 'Dashboard', activePage }: D
         : storedName.slice(0, 2).toUpperCase();
       setUserInitials(initials);
     }
+    const hour = new Date().getHours();
+    setGreeting(hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening');
   }, []);
 
-  const navItems = [
+  const firstName = userName ? userName.trim().split(' ')[0] : 'there';
+
+  const handleSignOut = () => {
+    localStorage.clear();
+    window.location.href = '/auth/login';
+  };
+
+  const mainNav = [
     {
       key: 'dashboard',
       href: '/dashboard',
@@ -46,6 +54,7 @@ export function DashboardLayout({ children, title = 'Dashboard', activePage }: D
       key: 'envelopes',
       href: '/envelopes',
       label: 'Envelopes',
+      badge: envelopeCount > 0 ? envelopeCount : null,
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
           <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
@@ -74,6 +83,19 @@ export function DashboardLayout({ children, title = 'Dashboard', activePage }: D
       ),
     },
     {
+      key: 'reports',
+      href: '/reports',
+      label: 'Reports',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+        </svg>
+      ),
+    },
+  ];
+
+  const accountNav = [
+    {
       key: 'account',
       href: '/account',
       label: 'Settings',
@@ -83,7 +105,86 @@ export function DashboardLayout({ children, title = 'Dashboard', activePage }: D
         </svg>
       ),
     },
+    {
+      key: 'billing',
+      href: '/account/subscription',
+      label: 'Billing',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+          <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
+        </svg>
+      ),
+    },
   ];
+
+  const NavItem = ({ item, onClick }: { item: typeof mainNav[0] & { badge?: number | null }, onClick?: () => void }) => {
+    const isActive = activePage === item.key;
+    return (
+      <li>
+        <Link
+          href={item.href}
+          onClick={onClick}
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm font-medium ${
+            isActive
+              ? 'bg-[#D4A832] text-black'
+              : 'text-gray-300 hover:bg-white/10 hover:text-white'
+          }`}
+        >
+          <span className={isActive ? 'text-black' : 'text-gray-400'}>{item.icon}</span>
+          <span className="flex-1">{item.label}</span>
+          {'badge' in item && item.badge ? (
+            <span className="bg-[#D4A832] text-black text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+              {item.badge}
+            </span>
+          ) : null}
+        </Link>
+      </li>
+    );
+  };
+
+  const sidebarContent = (onItemClick?: () => void) => (
+    <div className="flex flex-col h-full">
+      {/* Logo */}
+      <div className="p-4 border-b border-white/10 flex items-center gap-3">
+        <Image src="/sayina-logo.png" alt="Sayina" width={36} height={36} className="rounded-lg" />
+        <span className="text-xl font-bold text-white tracking-wide">Sayina</span>
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 p-4 overflow-y-auto">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-3">Main Menu</p>
+        <ul className="space-y-0.5 mb-6">
+          {mainNav.map(item => <NavItem key={item.key} item={item} onClick={onItemClick} />)}
+        </ul>
+
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-3">Account</p>
+        <ul className="space-y-0.5">
+          {accountNav.map(item => <NavItem key={item.key} item={item} onClick={onItemClick} />)}
+        </ul>
+      </nav>
+
+      {/* Starter Plan + Sign Out */}
+      <div className="p-4 border-t border-white/10 space-y-3">
+        <div className="bg-white/10 rounded-lg px-3 py-2.5">
+          <p className="text-xs font-bold text-[#D4A832] uppercase tracking-wider">Starter Plan</p>
+          <p className="text-xs text-gray-400 mt-0.5">0/5 envelopes used</p>
+          <div className="mt-2 h-1.5 bg-white/20 rounded-full">
+            <div className="h-1.5 bg-[#D4A832] rounded-full" style={{ width: '0%' }} />
+          </div>
+        </div>
+        <button
+          onClick={handleSignOut}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:bg-white/10 hover:text-white transition-colors text-sm font-medium"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clipRule="evenodd" />
+          </svg>
+          Sign Out
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -91,134 +192,74 @@ export function DashboardLayout({ children, title = 'Dashboard', activePage }: D
         <title>{title} | Sayina</title>
       </Head>
 
-      <div className="min-h-screen bg-secondary-50">
-        {/* Sidebar */}
-        <aside className="fixed inset-y-0 left-0 w-64 bg-white border-r border-secondary-100 z-20 hidden md:block">
-          <div className="p-4 border-b border-secondary-100 flex items-center gap-2">
-            <Image
-              src="/sayina-logo.png"
-              alt="Sayina Logo"
-              width={32}
-              height={32}
-              className="rounded-lg"
-            />
-            <span className="text-xl font-bold text-secondary-900">Sayina</span>
-          </div>
-          <nav className="p-4">
-            <ul className="space-y-1">
-              {navItems.map((item) => {
-                const isActive = activePage === item.key;
-                return (
-                  <li key={item.key}>
-                    <Link
-                      href={item.href}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors ${
-                        isActive
-                          ? 'bg-primary-50 text-primary-700'
-                          : 'text-secondary-600 hover:bg-secondary-50'
-                      }`}
-                    >
-                      {item.icon}
-                      {item.label}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </nav>
+      <div className="min-h-screen bg-gray-50 flex">
+        {/* Desktop sidebar */}
+        <aside className="fixed inset-y-0 left-0 w-64 bg-gray-900 z-20 hidden md:flex flex-col">
+          {sidebarContent()}
         </aside>
 
-        {/* Mobile top bar */}
-        <div className="md:hidden fixed top-0 left-0 right-0 z-20 bg-white border-b border-secondary-100 px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Image src="/sayina-logo.png" alt="Sayina" width={28} height={28} className="rounded-lg" />
-            <span className="font-bold text-secondary-900">Sayina</span>
-          </div>
-          <button onClick={() => setMobileNavOpen(!mobileNavOpen)} className="p-2 text-secondary-600">
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={mobileNavOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
-            </svg>
-          </button>
-        </div>
-
-        {/* Mobile nav dropdown */}
+        {/* Mobile overlay */}
         {mobileNavOpen && (
-          <div className="md:hidden fixed top-14 left-0 right-0 z-20 bg-white border-b border-secondary-100 shadow-lg">
-            <nav className="p-4">
-              <ul className="space-y-1">
-                {navItems.map((item) => {
-                  const isActive = activePage === item.key;
-                  return (
-                    <li key={item.key}>
-                      <Link
-                        href={item.href}
-                        onClick={() => setMobileNavOpen(false)}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-md ${
-                          isActive ? 'bg-primary-50 text-primary-700' : 'text-secondary-600'
-                        }`}
-                      >
-                        {item.icon}
-                        {item.label}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </nav>
+          <div className="md:hidden fixed inset-0 z-30 flex">
+            <div className="fixed inset-0 bg-black/50" onClick={() => setMobileNavOpen(false)} />
+            <aside className="relative w-64 bg-gray-900 flex flex-col shadow-xl">
+              {sidebarContent(() => setMobileNavOpen(false))}
+            </aside>
           </div>
         )}
 
-        {/* Main Content */}
-        <div className="md:pl-64 pt-14 md:pt-0">
-          {/* Header */}
-          <header className="bg-white border-b border-secondary-100 py-4 px-6 flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-secondary-900">{title}</h1>
-              {userName && (
-                <p className="text-secondary-500 text-sm">Welcome back, {userName}</p>
-              )}
+        {/* Main content */}
+        <div className="flex-1 md:ml-64 flex flex-col min-h-screen">
+          {/* Top header */}
+          <header className="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
+            {/* Mobile menu button */}
+            <button
+              className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-50 mr-3"
+              onClick={() => setMobileNavOpen(true)}
+            >
+              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+
+            {/* Greeting */}
+            <div className="hidden md:block">
+              <p className="text-sm text-gray-500">Welcome back,</p>
+              <h1 className="text-xl font-bold text-gray-900">{greeting}, {firstName}</h1>
             </div>
-            <div className="flex items-center gap-4">
-              <Button variant="outline" size="sm" onClick={() => setIsHelpOpen(true)}>
-                Need Help?
-              </Button>
-              <div className="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center text-white font-bold text-sm">
+            <h1 className="md:hidden text-lg font-bold text-gray-900">{title}</h1>
+
+            {/* Actions */}
+            <div className="flex items-center gap-3">
+              <Link href="/envelopes/create">
+                <button className="flex items-center gap-2 bg-[#D4A832] hover:bg-[#c49a28] text-black font-semibold px-4 py-2 rounded-lg text-sm transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  New Envelope
+                </button>
+              </Link>
+
+              {/* Notification bell */}
+              <button className="relative p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+                </svg>
+              </button>
+
+              {/* User avatar */}
+              <div className="w-9 h-9 rounded-full bg-[#D4A832] flex items-center justify-center text-black font-bold text-sm">
                 {userInitials || '?'}
               </div>
             </div>
           </header>
 
           {/* Page content */}
-          <main className="p-6">
+          <main className="flex-1 p-6">
             {children}
           </main>
         </div>
       </div>
-
-      {/* Help Modal */}
-      <Modal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} title="Need Help?" size="md">
-        <div>
-          <p className="mb-4 text-secondary-600">How can we assist you with Sayina e-signature services?</p>
-          <div className="space-y-2">
-            <div className="p-3 border rounded-md hover:bg-secondary-50 cursor-pointer">
-              <h3 className="font-medium text-secondary-900">How do I create a new envelope?</h3>
-            </div>
-            <div className="p-3 border rounded-md hover:bg-secondary-50 cursor-pointer">
-              <h3 className="font-medium text-secondary-900">Adding signers to documents</h3>
-            </div>
-            <div className="p-3 border rounded-md hover:bg-secondary-50 cursor-pointer">
-              <h3 className="font-medium text-secondary-900">SMS verification setup</h3>
-            </div>
-            <div className="p-3 border rounded-md hover:bg-secondary-50 cursor-pointer">
-              <h3 className="font-medium text-secondary-900">Contact support team</h3>
-            </div>
-          </div>
-        </div>
-        <div className="flex justify-end gap-2 mt-6">
-          <Button variant="outline" onClick={() => setIsHelpOpen(false)}>Close</Button>
-          <Link href="/contact"><Button>Contact Support</Button></Link>
-        </div>
-      </Modal>
     </>
   );
 }
