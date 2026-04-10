@@ -50,7 +50,7 @@ export default function Login() {
         {/* Logo */}
         <div className="flex justify-center mb-8">
           <Link href="/" className="flex items-center gap-2">
-            <Image src="/logo-192.png.svg" alt="Sayina" width={48} height={48} className="rounded-full" />
+            <Image src="/sayina-logo.png" alt="Sayina" width={48} height={48} className="rounded-full" />
             <span className="text-2xl font-bold text-secondary-900">Sayina</span>
           </Link>
         </div>
