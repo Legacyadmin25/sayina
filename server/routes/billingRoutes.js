@@ -3,6 +3,7 @@ const { body } = require('express-validator');
 const { protect, verifiedEmail, orgAdmin } = require('../middleware/authMiddleware');
 const { validationErrorHandler } = require('../middleware/errorMiddleware');
 const billingController = require('../controllers/billingController');
+const { applyPromoCode, validatePromoCode } = require('../controllers/promoController');
 
 const router = express.Router();
 
@@ -74,5 +75,25 @@ router.post(
  * @access  Private (Organization Admin only)
  */
 router.get('/transactions', orgAdmin, billingController.getTransactions);
+
+/**
+ * @route   POST /api/v1/billing/promo/validate
+ * @desc    Check if a promo code is valid (no side effects)
+ * @access  Private
+ */
+router.post('/promo/validate', [
+  body('code').notEmpty().withMessage('Code is required'),
+  validationErrorHandler
+], validatePromoCode);
+
+/**
+ * @route   POST /api/v1/billing/promo/apply
+ * @desc    Apply a promo code to the current organisation
+ * @access  Private (org admin)
+ */
+router.post('/promo/apply', orgAdmin, [
+  body('code').notEmpty().withMessage('Code is required'),
+  validationErrorHandler
+], applyPromoCode);
 
 module.exports = router;
