@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 
 interface PromoCode {
@@ -23,6 +24,8 @@ interface Plan {
 const API = process.env.NEXT_PUBLIC_API_BASE_URL || '/api/v1';
 
 export default function AdminPromoCodes() {
+  const router = useRouter();
+  const [accessChecked, setAccessChecked] = useState(false);
   const [codes, setCodes] = useState<PromoCode[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [plansError, setPlansError] = useState('');
@@ -65,7 +68,19 @@ export default function AdminPromoCodes() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  // Guard: only allow admin role to view this page
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const stored = localStorage.getItem('sayina_user_role');
+    if (stored && stored !== 'admin') {
+      router.replace('/dashboard');
+      return;
+    }
+    setAccessChecked(true);
+    load();
+  }, []);
+
+  if (!accessChecked) return null;
 
   const generateCode = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
