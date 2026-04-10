@@ -21,7 +21,7 @@ export function Header({ activePage }: HeaderProps) {
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2" onClick={() => setOpen(false)}>
-          <Image src="/logo-192.png.svg" alt="Sayina" width={38} height={38} className="rounded-full" />
+          <Image src="/sayina-logo.png" alt="Sayina" width={38} height={38} className="rounded-full" />
           <span className="text-xl font-bold text-secondary-900">Sayina</span>
         </Link>
 

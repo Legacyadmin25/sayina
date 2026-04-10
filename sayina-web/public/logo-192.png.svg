@@ -1,21 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
-  <!-- Gold circle background -->
-  <circle cx="96" cy="96" r="96" fill="#DAB44A"/>
-  <!-- Inner lighter ring -->
-  <circle cx="96" cy="96" r="80" fill="#E6C673" fill-opacity="0.3"/>
-  <!-- Feather/pen icon -->
-  <g transform="translate(96,96)">
-    <!-- Pen nib -->
-    <path d="M-8 32 L0 44 L8 32 L0 30 Z" fill="white" opacity="0.95"/>
-    <!-- Pen body -->
-    <path d="M-18 -30 Q0 -48 18 -30 L8 32 L-8 32 Z" fill="white" opacity="0.95"/>
-    <!-- Pen highlight -->
-    <path d="M-10 -28 Q0 -42 6 -26 L2 0 L-8 0 Z" fill="white" opacity="0.2"/>
-    <!-- Ink line -->
-    <line x1="0" y1="32" x2="0" y2="44" stroke="#DAB44A" stroke-width="2"/>
-    <!-- Pen tip line -->
-    <line x1="-8" y1="32" x2="8" y2="32" stroke="#c7a342" stroke-width="1.5"/>
-  </g>
-  <!-- "S" lettermark subtle overlay -->
-  <text x="96" y="170" font-family="Georgia, serif" font-size="18" font-weight="bold" text-anchor="middle" fill="white" opacity="0.8" letter-spacing="3">SAYINA</text>
+  <!-- Gold square background matching brand colour -->
+  <rect width="192" height="192" rx="28" fill="#D4A832"/>
+
+  <!-- Outer thin ring -->
+  <circle cx="96" cy="96" r="82" fill="none" stroke="#1a1a1a" stroke-width="2.5" opacity="0.7"/>
+
+  <!-- Feather quill — main body (right side barbs) -->
+  <path d="M118,36 C138,44 148,62 144,80 C140,98 128,110 118,120 L110,112 C120,104 130,92 132,76 C134,60 126,48 118,36Z" fill="#1a1a1a"/>
+  <!-- Feather quill — left side barbs -->
+  <path d="M118,36 C100,40 90,56 90,72 C90,88 98,102 110,112 L114,104 C104,96 98,84 100,70 C102,56 110,44 118,36Z" fill="#1a1a1a" opacity="0.85"/>
+  <!-- Quill central shaft -->
+  <line x1="118" y1="36" x2="100" y2="148" stroke="#D4A832" stroke-width="2.5"/>
+  <!-- Quill tip -->
+  <path d="M100,148 L96,160 L104,152 Z" fill="#1a1a1a"/>
+  <!-- Underline swirl below quill -->
+  <path d="M88,162 Q100,170 112,162" fill="none" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- "S" lettermark — bold, centred, left of quill -->
+  <text
+    x="54"
+    y="122"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-size="108"
+    font-style="italic"
+    font-weight="bold"
+    fill="#1a1a1a"
+    opacity="0.92"
+  >S</text>
 </svg>
