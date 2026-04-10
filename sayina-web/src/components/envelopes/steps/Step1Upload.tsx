@@ -39,15 +39,15 @@ export default function Step1Upload({ data, onNext }: Step1Props) {
         <CardTitle className="text-xl font-semibold">Step 1: Upload Document</CardTitle>
       </CardHeader>
       <CardContent>
-        <div 
-          className={`border-2 border-dashed rounded-lg p-8 text-center ${
+        <div
+          className={`relative border-2 border-dashed rounded-lg p-8 text-center ${
             isDragging ? 'border-primary-500 bg-primary-50' : 'border-secondary-300'
           } transition-all`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
-          <div className="flex flex-col items-center justify-center space-y-4">
+          <div className="flex flex-col items-center justify-center space-y-4 pointer-events-none">
             <div className="p-3 bg-primary-100 text-primary-500 rounded-full">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -59,13 +59,14 @@ export default function Step1Upload({ data, onNext }: Step1Props) {
               </p>
               <p className="text-sm text-secondary-500 mt-1">or click to browse</p>
             </div>
-            <input
-              type="file"
-              accept="application/pdf"
-              onChange={handleFileChange}
-              className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
-            />
           </div>
+          {/* Input scoped to the drop zone only — position relative on parent keeps it contained */}
+          <input
+            type="file"
+            accept="application/pdf"
+            onChange={handleFileChange}
+            className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
+          />
         </div>
 
         {file && (
