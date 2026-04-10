@@ -25,6 +25,7 @@ const API = process.env.NEXT_PUBLIC_API_BASE_URL || '/api/v1';
 export default function AdminPromoCodes() {
   const [codes, setCodes] = useState<PromoCode[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
+  const [plansError, setPlansError] = useState('');
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -38,15 +39,27 @@ export default function AdminPromoCodes() {
 
   const load = async () => {
     setLoading(true);
+    setPlansError('');
     try {
       const [codesRes, plansRes] = await Promise.all([
         fetch(`${API}/admin/promo-codes`, { headers }),
         fetch(`${API}/billing/plans`, { headers }),
       ]);
       const codesData = await codesRes.json();
-      const plansData = await plansRes.json();
       if (codesData.success) setCodes(codesData.data);
-      if (plansData.success) setPlans(plansData.data.subscription_plans || []);
+
+      if (plansRes.ok) {
+        const plansData = await plansRes.json();
+        if (plansData.success && plansData.data.subscription_plans?.length > 0) {
+          setPlans(plansData.data.subscription_plans);
+        } else {
+          setPlansError('Plans loaded but returned empty. Check DB has active plans.');
+        }
+      } else {
+        setPlansError('Could not load plans from API. Make sure you are logged in as admin and the server is running.');
+      }
+    } catch {
+      setPlansError('Network error loading plans. Please check the server is running.');
     } finally {
       setLoading(false);
     }
@@ -154,16 +167,23 @@ export default function AdminPromoCodes() {
             {/* Plan */}
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Plan to Grant *</label>
-              <select
-                value={form.plan_id}
-                onChange={e => setForm(f => ({ ...f, plan_id: e.target.value }))}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4A832]"
-              >
-                <option value="">Select a plan…</option>
-                {plans.map(p => (
-                  <option key={p.id} value={p.id}>{p.name} (R{(p.price / 100).toFixed(0)}/mo)</option>
-                ))}
-              </select>
+              {plansError ? (
+                <div className="border border-red-200 bg-red-50 rounded-lg px-3 py-2 text-xs text-red-600">
+                  {plansError}
+                  <button type="button" onClick={load} className="ml-2 underline font-semibold">Retry</button>
+                </div>
+              ) : (
+                <select
+                  value={form.plan_id}
+                  onChange={e => setForm(f => ({ ...f, plan_id: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4A832]"
+                >
+                  <option value="">Select a plan…</option>
+                  {plans.map(p => (
+                    <option key={p.id} value={p.id}>{p.name} (R{(p.price / 100).toFixed(0)}/mo)</option>
+                  ))}
+                </select>
+              )}
             </div>
 
             {/* Duration */}
