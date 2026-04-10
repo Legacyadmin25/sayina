@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 
 const plans = [
@@ -37,6 +38,39 @@ const plans = [
 ];
 
 export default function SubscriptionPage() {
+  const [promoCode, setPromoCode] = useState('');
+  const [promoStatus, setPromoStatus] = useState<{ type: 'success' | 'error' | 'info' | null; message: string }>({ type: null, message: '' });
+  const [promoLoading, setPromoLoading] = useState(false);
+
+  // Auto-fill promo code if one was entered during signup
+  useEffect(() => {
+    const pending = localStorage.getItem('sayina_pending_promo');
+    if (pending) setPromoCode(pending);
+  }, []);
+
+  const handleApplyPromo = async () => {
+    if (!promoCode.trim()) return;
+    setPromoLoading(true);
+    setPromoStatus({ type: null, message: '' });
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/v1/billing/promo/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ code: promoCode.trim().toUpperCase() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to apply code');
+      setPromoStatus({ type: 'success', message: data.message });
+      localStorage.removeItem('sayina_pending_promo');
+      setPromoCode('');
+    } catch (err: any) {
+      setPromoStatus({ type: 'error', message: err.message });
+    } finally {
+      setPromoLoading(false);
+    }
+  };
+
   return (
     <DashboardLayout title="Subscription" activePage="billing">
       <div className="mb-2">
@@ -91,6 +125,38 @@ export default function SubscriptionPage() {
       <p className="mt-6 text-xs text-gray-400 text-center">
         All plans are billed monthly. Cancel anytime. Powered by PayFast — secure South African payments.
       </p>
+
+      {/* Promo code section */}
+      <div className="mt-8 bg-white rounded-xl shadow-sm p-6 max-w-md">
+        <h3 className="font-semibold text-gray-900 mb-1">Have a promo code?</h3>
+        <p className="text-sm text-gray-400 mb-4">Enter a code to get free plan access for a set period.</p>
+
+        {promoStatus.type && (
+          <div className={`mb-4 px-4 py-3 rounded-lg text-sm ${
+            promoStatus.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' :
+            'bg-red-50 text-red-700 border border-red-200'
+          }`}>
+            {promoStatus.message}
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={promoCode}
+            onChange={e => setPromoCode(e.target.value.toUpperCase())}
+            placeholder="e.g. SAYINA2026"
+            className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm uppercase tracking-widest focus:outline-none focus:ring-2 focus:ring-[#D4A832]"
+          />
+          <button
+            onClick={handleApplyPromo}
+            disabled={promoLoading || !promoCode.trim()}
+            className="bg-[#D4A832] hover:bg-[#c49a28] disabled:opacity-50 text-black font-semibold px-4 py-2 rounded-lg text-sm transition-colors"
+          >
+            {promoLoading ? 'Applying…' : 'Apply'}
+          </button>
+        </div>
+      </div>
     </DashboardLayout>
   );
 }

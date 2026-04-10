@@ -8,7 +8,7 @@ export default function Signup() {
   const router = useRouter();
   const [form, setForm] = useState({
     fullName: '', email: '', password: '', confirmPassword: '',
-    organization: '', phone: '', acceptTerms: false, marketingConsent: false,
+    organization: '', phone: '', promoCode: '', acceptTerms: false, marketingConsent: false,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -58,6 +58,9 @@ export default function Signup() {
       if (typeof window !== 'undefined') {
         localStorage.setItem('sayina_user_name', form.fullName);
         localStorage.setItem('sayina_user_email', form.email);
+        if (form.promoCode.trim()) {
+          localStorage.setItem('sayina_pending_promo', form.promoCode.trim().toUpperCase());
+        }
       }
       router.push('/auth/verify-otp?email=' + encodeURIComponent(form.email) + '&name=' + encodeURIComponent(form.fullName));
     } catch (err: any) {
@@ -181,6 +184,21 @@ export default function Signup() {
                   className={inputClass('confirmPassword')}
                 />
                 {errors.confirmPassword && <p className="mt-1 text-xs text-red-500">{errors.confirmPassword}</p>}
+              </div>
+
+              {/* Promo Code (optional) */}
+              <div>
+                <label htmlFor="promoCode" className="block text-sm font-medium text-secondary-700 mb-1">
+                  Promo Code <span className="text-secondary-400 font-normal">(optional)</span>
+                </label>
+                <input
+                  id="promoCode" name="promoCode" type="text"
+                  value={form.promoCode} onChange={handleChange}
+                  placeholder="e.g. SAYINA2026"
+                  autoComplete="off"
+                  className={`${inputClass('promoCode')} uppercase tracking-widest`}
+                />
+                <p className="mt-1 text-xs text-secondary-400">Have a code from Sayina? Enter it here for free access.</p>
               </div>
 
               {/* Checkboxes */}
