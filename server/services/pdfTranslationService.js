@@ -8,7 +8,12 @@
 const fs = require('fs').promises;
 const path = require('path');
 const { PDFDocument } = require('pdf-lib');
-const { createWorker } = require('tesseract.js');
+let createWorker;
+try {
+  createWorker = require('tesseract.js').createWorker;
+} catch (e) {
+  console.warn('[pdfTranslationService] tesseract.js not available — OCR features disabled');
+}
 const { v4: uuidv4 } = require('uuid');
 const axios = require('axios');
 const db = require('../config/db');
@@ -51,6 +56,9 @@ const extractTextFromPdf = async (pdfBuffer, sourceLanguage) => {
   const numPages = pdfDoc.getPageCount();
   
   // Initialize Tesseract worker with language data
+  if (!createWorker) {
+    throw new Error('OCR is not available — tesseract.js is not installed.');
+  }
   const tesseractLang = LANGUAGE_MAP[sourceLanguage] || 'eng';
   const worker = await createWorker(tesseractLang);
   
