@@ -2,17 +2,21 @@ const knex = require('knex');
 const { knexSnakeCaseMappers } = require('objection');
 require('dotenv').config();
 
-// Database configuration
+// Database configuration — prefer DATABASE_URL if available (Railway provides this)
+const dbConnection = process.env.DATABASE_URL
+  ? { connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } }
+  : {
+      host: process.env.DB_HOST || 'localhost',
+      port: process.env.DB_PORT || 5432,
+      user: process.env.DB_USER || 'postgres',
+      password: process.env.DB_PASSWORD || 'postgres',
+      database: process.env.DB_NAME || 'sayina',
+      ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false
+    };
+
 const dbConfig = {
   client: 'pg',
-  connection: {
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 5432,
-    user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'postgres',
-    database: process.env.DB_NAME || 'sayina',
-    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false
-  },
+  connection: dbConnection,
   pool: {
     min: 2,
     max: 10
