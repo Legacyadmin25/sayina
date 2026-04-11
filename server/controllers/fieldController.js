@@ -116,7 +116,7 @@ const addField = async (req, res, next) => {
     }
 
     // Create field
-    const [fieldId] = await db('fields').insert({
+    const _fieldIdResult = await db('fields').insert({
       id: uuidv4(),
       document_id,
       envelope_id,
@@ -136,6 +136,7 @@ const addField = async (req, res, next) => {
       validation_message: validation_message || null,
       created_by: userId
     }).returning('id');
+    const fieldId = _fieldIdResult[0]?.id ?? _fieldIdResult[0];
 
     // Log event to system logs
     await db('system_logs').insert({

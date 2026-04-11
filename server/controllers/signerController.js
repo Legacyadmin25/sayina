@@ -57,7 +57,7 @@ const addSigner = async (req, res, next) => {
     const accessToken = crypto.randomBytes(32).toString('hex');
 
     // Create signer
-    const [signerId] = await db('signers').insert({
+    const _signerIdResult = await db('signers').insert({
       id: uuidv4(),
       envelope_id,
       name,
@@ -70,6 +70,7 @@ const addSigner = async (req, res, next) => {
       access_token: accessToken,
       created_by: userId
     }).returning('id');
+    const signerId = _signerIdResult[0]?.id ?? _signerIdResult[0];
 
     // Log event
     await db('system_logs').insert({

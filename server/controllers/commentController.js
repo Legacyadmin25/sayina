@@ -36,7 +36,7 @@ const addEnvelopeComment = async (req, res, next) => {
     const sanitizedContent = sanitizeInput(content);
 
     // Create comment
-    const [commentId] = await db('comments').insert({
+    const _commentIdResult1 = await db('comments').insert({
       id: uuidv4(),
       envelope_id: envelopeId,
       user_id: userId,
@@ -44,6 +44,7 @@ const addEnvelopeComment = async (req, res, next) => {
       is_private: is_private === true,
       parent_id: null
     }).returning('id');
+    const commentId = _commentIdResult1[0]?.id ?? _commentIdResult1[0];
 
     // Log event
     await logSystemEvent({
@@ -140,7 +141,7 @@ const addDocumentComment = async (req, res, next) => {
     const sanitizedContent = sanitizeInput(content);
 
     // Create comment
-    const [commentId] = await db('comments').insert({
+    const _commentIdResult2 = await db('comments').insert({
       id: uuidv4(),
       document_id: documentId,
       envelope_id: document.envelope_id,
@@ -152,6 +153,7 @@ const addDocumentComment = async (req, res, next) => {
       y_position: y_position || null,
       parent_id: null
     }).returning('id');
+    const commentId = _commentIdResult2[0]?.id ?? _commentIdResult2[0];
 
     // Log event
     await logSystemEvent({
@@ -256,7 +258,7 @@ const replyToComment = async (req, res, next) => {
     const sanitizedContent = sanitizeInput(content);
 
     // Create reply
-    const [replyId] = await db('comments').insert({
+    const _replyIdResult = await db('comments').insert({
       id: uuidv4(),
       envelope_id: parentComment.envelope_id,
       document_id: parentComment.document_id,
@@ -268,6 +270,7 @@ const replyToComment = async (req, res, next) => {
       y_position: parentComment.y_position,
       parent_id: commentId
     }).returning('id');
+    const replyId = _replyIdResult[0]?.id ?? _replyIdResult[0];
 
     // Log event
     await logSystemEvent({
