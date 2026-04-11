@@ -1,20 +1,25 @@
 const Redis = require('ioredis');
 require('dotenv').config();
 
-// Redis configuration
-const redisConfig = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: process.env.REDIS_PORT || 6379,
-  password: process.env.REDIS_PASSWORD || '',
-  db: process.env.REDIS_DB || 0,
-  retryStrategy: (times) => {
-    const delay = Math.min(times * 50, 2000);
-    return delay;
-  }
-};
+// Redis configuration — prefer REDIS_URL if available (Railway provides this)
+const redisConfig = process.env.REDIS_URL
+  ? {
+      // ioredis accepts a connection string directly
+      lazyConnect: false,
+      retryStrategy: (times) => Math.min(times * 50, 2000)
+    }
+  : {
+      host: process.env.REDIS_HOST || 'localhost',
+      port: parseInt(process.env.REDIS_PORT) || 6379,
+      password: process.env.REDIS_PASSWORD || undefined,
+      db: parseInt(process.env.REDIS_DB) || 0,
+      retryStrategy: (times) => Math.min(times * 50, 2000)
+    };
 
-// Initialize Redis client
-const redisClient = new Redis(redisConfig);
+// Initialize Redis client — pass URL directly when available
+const redisClient = process.env.REDIS_URL
+  ? new Redis(process.env.REDIS_URL, { retryStrategy: (times) => Math.min(times * 50, 2000) })
+  : new Redis(redisConfig);
 
 // Handle Redis connection events
 redisClient.on('connect', () => {
