@@ -57,16 +57,19 @@ const registerUser = async (req, res, next) => {
     // Start a transaction
     await db.transaction(async trx => {
       // Create organization
-      const [orgId] = await trx('organizations').insert({
+      const orgInsert = await trx('organizations').insert({
         id: uuidv4(),
         name: org_name,
         email: email,
         sms_credits: 15 // Free tier starting credits
       }).returning('id');
+      // Knex returns [{id:'uuid'}] in pg — extract the string
+      const orgId = orgInsert[0]?.id || orgInsert[0];
 
       // Create user
-      const [userId] = await trx('users').insert({
-        id: uuidv4(),
+      const newUserId = uuidv4();
+      await trx('users').insert({
+        id: newUserId,
         email,
         password: hashedPassword,
         first_name,
@@ -75,7 +78,8 @@ const registerUser = async (req, res, next) => {
         org_id: orgId,
         role: 'org_admin', // First user is org admin
         verification_token: crypto.randomBytes(32).toString('hex')
-      }).returning('id');
+      });
+      const userId = newUserId;
 
       // Create free tier subscription
       await trx('subscriptions').insert({
