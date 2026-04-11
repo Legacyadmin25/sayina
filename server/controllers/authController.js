@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const { db } = require('../config/db');
 const { ApiError } = require('../middleware/errorMiddleware');
 const { generateAndStoreOTP, verifyUserOTP } = require('../services/otpService');
+const { redisClient } = require('../config/redis');
 require('dotenv').config();
 
 /**
@@ -744,6 +745,12 @@ const resendOTP = async (req, res, next) => {
     }
 
     await generateAndStoreOTP(user.id, 'email', email);
+
+    // TEMP: log OTP to console so admin can recover it while email is being fixed
+    try {
+      const debugOtp = await redisClient.get(`otp:${user.id}:email:${email}`);
+      console.log(`[OTP_LOG] uid=${user.id} email=${email} otp=${debugOtp}`);
+    } catch (_) {}
 
     return res.status(200).json({ success: true, message: 'Verification code resent successfully.' });
   } catch (error) {
