@@ -5,19 +5,23 @@ const BACKEND = process.env.BACKEND_URL || 'https://sayina-production.up.railway
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  const token = req.headers.authorization || '';
+
   try {
-    const upstream = await fetch(`${BACKEND}/api/v1/auth/verify-otp`, {
+    // Backend verify-email needs auth token + otp + method
+    const upstream = await fetch(`${BACKEND}/api/v1/auth/verify-email`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(req.headers.cookie ? { Cookie: req.headers.cookie } : {}),
+        ...(token ? { Authorization: token } : {}),
       },
-      body: JSON.stringify(req.body),
+      body: JSON.stringify({ otp: req.body.otp, method: 'sms' }),
     });
     const data = await upstream.json();
-    // Forward any Set-Cookie headers from Railway
-    const setCookie = upstream.headers.get('set-cookie');
-    if (setCookie) res.setHeader('Set-Cookie', setCookie);
+    // Forward the real JWT token if present
+    if (data.data?.token) {
+      return res.status(upstream.status).json({ ...data, token: data.data.token, success: true });
+    }
     return res.status(upstream.status).json(data);
   } catch (err: any) {
     return res.status(502).json({ message: 'Could not reach the Sayina server. Please try again.' });
