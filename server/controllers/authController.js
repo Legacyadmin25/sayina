@@ -713,6 +713,113 @@ const logoutUser = async (req, res, next) => {
   }
 };
 
+/**
+ * @desc    Resend email verification OTP (public — no token needed)
+ * @route   POST /api/v1/auth/resend-otp
+ * @access  Public
+ */
+const resendOTP = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return next(new ApiError(400, 'Email is required'));
+    }
+
+    const user = await db('users')
+      .where({ email })
+      .select('id', 'is_email_verified', 'is_active')
+      .first();
+
+    // Don't reveal whether the user exists
+    if (!user || !user.is_active) {
+      return res.status(200).json({ success: true, message: 'If your email is registered, a new code has been sent.' });
+    }
+
+    if (user.is_email_verified) {
+      return res.status(200).json({ success: true, message: 'Email is already verified. Please log in.' });
+    }
+
+    await generateAndStoreOTP(user.id, 'email', email);
+
+    return res.status(200).json({ success: true, message: 'Verification code resent successfully.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Verify email OTP (public — no token needed)
+ * @route   POST /api/v1/auth/verify-otp
+ * @access  Public
+ */
+const verifyOTPPublic = async (req, res, next) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return next(new ApiError(400, 'Email and OTP are required'));
+    }
+
+    const user = await db('users')
+      .where({ email })
+      .select('id', 'email', 'first_name', 'last_name', 'role', 'org_id', 'is_email_verified', 'is_active')
+      .first();
+
+    if (!user) {
+      return next(new ApiError(404, 'User not found'));
+    }
+
+    if (!user.is_active) {
+      return next(new ApiError(401, 'Account is deactivated, please contact support'));
+    }
+
+    if (user.is_email_verified) {
+      // Already verified — just issue tokens so they can log in
+      const token = generateToken(user.id);
+      const refreshToken = generateRefreshToken(user.id);
+      return res.status(200).json({
+        success: true,
+        message: 'Email already verified',
+        data: { token, refreshToken, user: { id: user.id, email: user.email, role: user.role } }
+      });
+    }
+
+    const result = await verifyUserOTP(user.id, 'email', email, otp);
+    if (!result.success) {
+      return next(new ApiError(400, 'Invalid or expired verification code'));
+    }
+
+    // Mark email as verified
+    await db('users')
+      .where({ id: user.id })
+      .update({
+        is_email_verified: true,
+        verification_token: null,
+        updated_at: db.fn.now()
+      });
+
+    await db('system_logs').insert({
+      user_id: user.id,
+      action: 'email_verified',
+      metadata: JSON.stringify({ method: 'email' }),
+      ip_address: req.ip,
+      user_agent: req.headers['user-agent']
+    });
+
+    // Issue tokens so the user lands straight in the dashboard
+    const token = generateToken(user.id);
+    const refreshToken = generateRefreshToken(user.id);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Email verified successfully',
+      data: { token, refreshToken, user: { id: user.id, email: user.email, role: user.role } }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
@@ -724,5 +831,7 @@ module.exports = {
   changePassword,
   getUserProfile,
   updateUserProfile,
-  logoutUser
+  logoutUser,
+  resendOTP,
+  verifyOTPPublic
 };

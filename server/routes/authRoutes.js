@@ -90,6 +90,35 @@ router.post(
 );
 
 /**
+ * @route   POST /api/v1/auth/resend-otp
+ * @desc    Resend email verification OTP (no auth required)
+ * @access  Public
+ */
+router.post(
+  '/resend-otp',
+  [
+    body('email').isEmail().withMessage('Please provide a valid email'),
+    validationErrorHandler
+  ],
+  authController.resendOTP
+);
+
+/**
+ * @route   POST /api/v1/auth/verify-otp
+ * @desc    Verify email OTP (no auth required)
+ * @access  Public
+ */
+router.post(
+  '/verify-otp',
+  [
+    body('email').isEmail().withMessage('Please provide a valid email'),
+    body('otp').notEmpty().withMessage('OTP is required'),
+    validationErrorHandler
+  ],
+  authController.verifyOTPPublic
+);
+
+/**
  * @route   POST /api/v1/auth/forgot-password
  * @desc    Forgot password
  * @access  Public

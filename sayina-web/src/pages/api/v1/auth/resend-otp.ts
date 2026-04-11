@@ -6,19 +6,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    // Use the public verify-otp endpoint — no auth token needed
-    const upstream = await fetch(`${BACKEND}/api/v1/auth/verify-otp`, {
+    const upstream = await fetch(`${BACKEND}/api/v1/auth/resend-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: req.body.email, otp: req.body.otp }),
+      body: JSON.stringify({ email: req.body.email }),
     });
     const data = await upstream.json();
-    // Forward the real JWT token if present
-    if (data.data?.token) {
-      return res.status(upstream.status).json({ ...data, token: data.data.token, success: true });
-    }
     return res.status(upstream.status).json(data);
-  } catch (err: any) {
+  } catch {
     return res.status(502).json({ message: 'Could not reach the Sayina server. Please try again.' });
   }
 }
