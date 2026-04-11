@@ -57,9 +57,13 @@ export default function VerifyOtp() {
     setError('');
 
     try {
+      const tempToken = typeof window !== 'undefined' ? localStorage.getItem('sayina_temp_token') : '';
       const res = await fetch('/api/v1/auth/verify-otp', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(tempToken ? { Authorization: `Bearer ${tempToken}` } : {}),
+        },
         body: JSON.stringify({ email, otp: code }),
       });
       const data = await res.json();
@@ -67,21 +71,20 @@ export default function VerifyOtp() {
       if (!res.ok) {
         setError(data.message || 'Invalid or expired code. Please try again.');
       } else {
-        // Save user info so dashboard can personalise
         if (typeof window !== 'undefined') {
-          if (data.token) localStorage.setItem('token', data.token);
+          const finalToken = data.token || data.data?.token;
+          if (finalToken) {
+            localStorage.setItem('token', finalToken);
+            localStorage.removeItem('sayina_temp_token');
+          }
+          if (data.data?.user?.role) localStorage.setItem('sayina_user_role', data.data.user.role);
           if (name) localStorage.setItem('sayina_user_name', Array.isArray(name) ? name[0] : name);
           if (email) localStorage.setItem('sayina_user_email', Array.isArray(email) ? email[0] : email);
         }
         router.push('/dashboard');
       }
     } catch {
-      // If no backend yet, simulate success for demo
-      if (typeof window !== 'undefined') {
-        if (name) localStorage.setItem('sayina_user_name', Array.isArray(name) ? name[0] : name);
-        if (email) localStorage.setItem('sayina_user_email', Array.isArray(email) ? email[0] : email);
-      }
-      router.push('/dashboard');
+      setError('Could not connect to the server. Please try again.');
     } finally {
       setLoading(false);
     }

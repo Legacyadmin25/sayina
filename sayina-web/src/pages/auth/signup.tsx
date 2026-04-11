@@ -54,10 +54,12 @@ export default function Signup() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Signup failed');
-      // Save name locally so dashboard can greet the user
+      // Save info locally so dashboard can greet the user
       if (typeof window !== 'undefined') {
         localStorage.setItem('sayina_user_name', form.fullName);
         localStorage.setItem('sayina_user_email', form.email);
+        // Store the temp token from register so verify-otp can use it
+        if (data.data?.token) localStorage.setItem('sayina_temp_token', data.data.token);
         if (form.promoCode.trim()) {
           localStorage.setItem('sayina_pending_promo', form.promoCode.trim().toUpperCase());
         }
