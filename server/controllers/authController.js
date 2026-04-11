@@ -730,12 +730,16 @@ const resendOTP = async (req, res, next) => {
       .select('id', 'is_email_verified', 'is_active')
       .first();
 
+    // knexSnakeCaseMappers converts results to camelCase — support both forms
+    const isActive = user?.isActive ?? user?.is_active;
+    const isEmailVerified = user?.isEmailVerified ?? user?.is_email_verified;
+
     // Don't reveal whether the user exists
-    if (!user || !user.is_active) {
+    if (!user || !isActive) {
       return res.status(200).json({ success: true, message: 'If your email is registered, a new code has been sent.' });
     }
 
-    if (user.is_email_verified) {
+    if (isEmailVerified) {
       return res.status(200).json({ success: true, message: 'Email is already verified. Please log in.' });
     }
 
@@ -769,11 +773,15 @@ const verifyOTPPublic = async (req, res, next) => {
       return next(new ApiError(404, 'User not found'));
     }
 
-    if (!user.is_active) {
+    // knexSnakeCaseMappers converts results to camelCase — support both forms
+    const isActive = user.isActive ?? user.is_active;
+    const isEmailVerified = user.isEmailVerified ?? user.is_email_verified;
+
+    if (!isActive) {
       return next(new ApiError(401, 'Account is deactivated, please contact support'));
     }
 
-    if (user.is_email_verified) {
+    if (isEmailVerified) {
       // Already verified — just issue tokens so they can log in
       const token = generateToken(user.id);
       const refreshToken = generateRefreshToken(user.id);
