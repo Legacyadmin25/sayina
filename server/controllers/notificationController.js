@@ -380,7 +380,7 @@ const createNotification = async (notificationData) => {
     }
 
     // Create notification
-    const [notificationId] = await db('notifications').insert({
+    const _notificationIdResult = await db('notifications').insert({
       id: uuidv4(),
       user_id,
       type,
@@ -389,6 +389,7 @@ const createNotification = async (notificationData) => {
       metadata: JSON.stringify(metadata),
       read: false
     }).returning('id');
+    const notificationId = _notificationIdResult[0]?.id ?? _notificationIdResult[0];
 
     // Send email notification if enabled
     if (send_email && user.email_notifications) {

@@ -29,7 +29,7 @@ const createTemplate = async (req, res, next) => {
     }
 
     // Create template
-    const [templateId] = await db('templates').insert({
+    const _templateIdResult = await db('templates').insert({
       id: uuidv4(),
       org_id: orgId,
       name,
@@ -42,6 +42,7 @@ const createTemplate = async (req, res, next) => {
       is_public: is_public === true,
       created_by: userId
     }).returning('id');
+    const templateId = _templateIdResult[0]?.id ?? _templateIdResult[0];
 
     // Log event
     await logSystemEvent({
@@ -368,7 +369,7 @@ const addTemplateField = async (req, res, next) => {
     }
 
     // Create field
-    const [fieldId] = await db('template_fields').insert({
+    const _fieldIdResult = await db('template_fields').insert({
       id: uuidv4(),
       template_id: id,
       type,
@@ -384,6 +385,7 @@ const addTemplateField = async (req, res, next) => {
       options: options ? JSON.stringify(options) : null,
       created_by: userId
     }).returning('id');
+    const fieldId = _fieldIdResult[0]?.id ?? _fieldIdResult[0];
 
     // Log event
     await logSystemEvent({
@@ -590,7 +592,7 @@ const createEnvelopeFromTemplate = async (req, res, next) => {
     }
 
     // Create envelope
-    const [envelopeId] = await db('envelopes').insert({
+    const _envelopeIdResult = await db('envelopes').insert({
       id: uuidv4(),
       org_id: orgId,
       name: name || template.name,
@@ -599,6 +601,7 @@ const createEnvelopeFromTemplate = async (req, res, next) => {
       status: 'draft',
       created_by: userId
     }).returning('id');
+    const envelopeId = _envelopeIdResult[0]?.id ?? _envelopeIdResult[0];
 
     // Copy template file to document
     const templateFilePath = template.file_path;
@@ -615,7 +618,7 @@ const createEnvelopeFromTemplate = async (req, res, next) => {
     fs.copyFileSync(templateFilePath, documentFilePath);
 
     // Create document
-    const [documentId] = await db('documents').insert({
+    const _documentIdResult = await db('documents').insert({
       id: uuidv4(),
       envelope_id: envelopeId,
       org_id: orgId,
@@ -626,6 +629,7 @@ const createEnvelopeFromTemplate = async (req, res, next) => {
       file_type: template.file_type,
       created_by: userId
     }).returning('id');
+    const documentId = _documentIdResult[0]?.id ?? _documentIdResult[0];
 
     // Get template fields
     const templateFields = await db('template_fields')

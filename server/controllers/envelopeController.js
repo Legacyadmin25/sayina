@@ -48,7 +48,7 @@ const createEnvelope = async (req, res, next) => {
     }
 
     // Create envelope
-    const [envelopeId] = await db('envelopes').insert({
+    const _envelopeIdResult = await db('envelopes').insert({
       id: uuidv4(),
       name,
       message: message || null,
@@ -57,6 +57,7 @@ const createEnvelope = async (req, res, next) => {
       org_id: orgId,
       created_by: userId,
     }).returning('id');
+    const envelopeId = _envelopeIdResult[0]?.id ?? _envelopeIdResult[0];
 
     // Log event
     await db('events').insert({
@@ -432,7 +433,7 @@ const addSigner = async (req, res, next) => {
     }
 
     // Create signer
-    const [signerId] = await db('signers').insert({
+    const _signerIdResult = await db('signers').insert({
       id: uuidv4(),
       envelope_id: id,
       email,
@@ -441,6 +442,7 @@ const addSigner = async (req, res, next) => {
       order: signerOrder,
       status: 'pending'
     }).returning('id');
+    const signerId = _signerIdResult[0]?.id ?? _signerIdResult[0];
 
     // Log event
     await db('events').insert({

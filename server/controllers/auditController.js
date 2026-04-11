@@ -93,12 +93,13 @@ const generateAuditTrail = async (req, res, next) => {
     });
 
     // Create audit trail record
-    const [auditRecordId] = await db('audit_documents').insert({
+    const _auditRecordIdResult = await db('audit_documents').insert({
       envelope_id: envelopeId,
       file_path: result.filePath,
       file_name: result.filename,
       generated_by: userId
     }).returning('id');
+    const auditRecordId = _auditRecordIdResult[0]?.id ?? _auditRecordIdResult[0];
 
     res.status(200).json({
       success: true,
@@ -213,12 +214,13 @@ const getPublicAuditTrail = async (req, res, next) => {
       }
 
       // Create audit trail record
-      const [auditRecordId] = await db('audit_documents').insert({
+      const _auditRecordIdResult2 = await db('audit_documents').insert({
         envelope_id: envelopeId,
         file_path: result.filePath,
         file_name: result.filename,
         generated_by: null // System generated
       }).returning('id');
+      const auditRecordId = _auditRecordIdResult2[0]?.id ?? _auditRecordIdResult2[0];
 
       auditDocument = await db('audit_documents')
         .where('id', auditRecordId)

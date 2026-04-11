@@ -72,7 +72,7 @@ const createWebhook = async (req, res, next) => {
     const secret = crypto.randomBytes(32).toString('hex');
     
     // Create webhook
-    const [webhookId] = await db('webhooks').insert({
+    const _webhookIdResult = await db('webhooks').insert({
       id: uuidv4(),
       org_id: orgId,
       name,
@@ -83,6 +83,7 @@ const createWebhook = async (req, res, next) => {
       active,
       created_by: userId
     }).returning('id');
+    const webhookId = _webhookIdResult[0]?.id ?? _webhookIdResult[0];
     
     // Log event
     await logSystemEvent({

@@ -349,7 +349,7 @@ const inviteUser = async (req, res, next) => {
     const hashedPassword = await bcrypt.hash(tempPassword, salt);
 
     // Create user
-    const [newUserId] = await db('users').insert({
+    const _newUserIdResult = await db('users').insert({
       id: uuidv4(),
       email,
       password: hashedPassword,
@@ -361,6 +361,7 @@ const inviteUser = async (req, res, next) => {
       is_email_verified: false,
       verification_token: crypto.randomBytes(32).toString('hex')
     }).returning('id');
+    const newUserId = _newUserIdResult[0]?.id ?? _newUserIdResult[0];
 
     // Send invitation email with OTP
     await generateAndStoreOTP(newUserId, 'email', email);

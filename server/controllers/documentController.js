@@ -87,7 +87,7 @@ const uploadDocument = async (req, res, next) => {
         const pageCount = pdfDoc.getPageCount();
 
         // Create document record in database
-        const [documentId] = await db('documents').insert({
+        const _documentIdResult = await db('documents').insert({
           id: uuidv4(),
           envelope_id: envelopeId,
           name: fileName,
@@ -97,6 +97,7 @@ const uploadDocument = async (req, res, next) => {
           sha256_hash: hash,
           page_count: pageCount,
         }).returning('id');
+        const documentId = _documentIdResult[0]?.id ?? _documentIdResult[0];
 
         // Log event
         await db('events').insert({
