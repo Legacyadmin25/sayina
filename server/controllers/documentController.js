@@ -4,9 +4,36 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
-const { PDFDocument } = require('pdf-lib');
-const { db } = require('../config/db');
+const { PDFDocument, rgb } = require('pdf-lib');
+const db_module = require('../config/db');
+const { db } = db_module;
 const { ApiError } = require('../middleware/errorMiddleware');
+
+// Accepted MIME types for upload
+const ACCEPTED_MIMETYPES = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'image/jpeg',
+  'image/png',
+];
+
+/**
+ * Convert image file to a single-page PDF using pdf-lib
+ */
+const imageToPdf = async (filePath, mimetype) => {
+  const imageBuffer = fs.readFileSync(filePath);
+  const pdfDoc = await PDFDocument.create();
+  let image;
+  if (mimetype === 'image/jpeg') {
+    image = await pdfDoc.embedJpg(imageBuffer);
+  } else {
+    image = await pdfDoc.embedPng(imageBuffer);
+  }
+  const page = pdfDoc.addPage([image.width, image.height]);
+  page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
+  return await pdfDoc.save();
+};
 
 /**
  * @desc    Upload document to envelope
@@ -17,7 +44,7 @@ const uploadDocument = async (req, res, next) => {
   try {
     const { envelopeId } = req.params;
     const userId = req.user.id;
-    const orgId = req.user.org_id;
+    const orgId = req.user.orgId ?? req.user.org_id;
 
     // Check if envelope exists and belongs to user's organization
     const envelope = await db('envelopes')
@@ -51,13 +78,12 @@ const uploadDocument = async (req, res, next) => {
 
     const upload = multer({
       storage,
-      limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+      limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB limit
       fileFilter: (req, file, cb) => {
-        // Only allow PDF files
-        if (file.mimetype === 'application/pdf') {
+        if (ACCEPTED_MIMETYPES.includes(file.mimetype)) {
           return cb(null, true);
         }
-        cb(new Error('Only PDF files are allowed'));
+        cb(new Error('Unsupported file type. Please upload a PDF, Word document (.doc/.docx), or image (.jpg/.png).'));
       }
     }).single('document');
 
@@ -72,19 +98,63 @@ const uploadDocument = async (req, res, next) => {
       }
 
       try {
-        // Get file details
-        const filePath = req.file.path;
-        const fileName = req.file.originalname;
-        const fileSize = req.file.size;
-        const fileType = req.file.mimetype;
+        let filePath = req.file.path;
+        const originalName = req.file.originalname;
+        const originalMimetype = req.file.mimetype;
 
-        // Calculate SHA-256 hash of the file
+        // ── Convert non-PDF files to PDF ──────────────────────────────────────
+        let fileType = 'application/pdf';
+        let fileName = originalName.replace(/\.(docx?|jpe?g|png)$/i, '.pdf');
+
+        if (originalMimetype === 'image/jpeg' || originalMimetype === 'image/png') {
+          // Convert image → PDF using pdf-lib
+          const pdfBytes = await imageToPdf(filePath, originalMimetype);
+          const pdfPath = filePath.replace(/\.(jpe?g|png)$/i, '.pdf');
+          fs.writeFileSync(pdfPath, pdfBytes);
+          fs.unlinkSync(filePath); // remove original image
+          filePath = pdfPath;
+        } else if (
+          originalMimetype === 'application/msword' ||
+          originalMimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        ) {
+          // Word docs: attempt LibreOffice conversion (available on Railway Linux)
+          // If LibreOffice isn't available, keep the file and note it in file_type
+          try {
+            const { execSync } = require('child_process');
+            const uploadDir = path.dirname(filePath);
+            execSync(`libreoffice --headless --convert-to pdf --outdir "${uploadDir}" "${filePath}"`, { timeout: 30000 });
+            const pdfPath = filePath.replace(/\.docx?$/i, '.pdf');
+            if (fs.existsSync(pdfPath)) {
+              fs.unlinkSync(filePath);
+              filePath = pdfPath;
+            } else {
+              // LibreOffice ran but no PDF — fall back to keeping original
+              fileType = originalMimetype;
+              fileName = originalName;
+            }
+          } catch {
+            // LibreOffice not available — keep original, mark type
+            fileType = originalMimetype;
+            fileName = originalName;
+          }
+        } else {
+          // Already a PDF
+          fileName = originalName;
+        }
+
+        // Get file details post-conversion
         const fileBuffer = fs.readFileSync(filePath);
+        const fileSize = fileBuffer.length;
         const hash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
 
-        // Get page count from PDF
-        const pdfDoc = await PDFDocument.load(fileBuffer);
-        const pageCount = pdfDoc.getPageCount();
+        // Get page count (only possible for PDFs)
+        let pageCount = 1;
+        if (fileType === 'application/pdf') {
+          try {
+            const pdfDoc = await PDFDocument.load(fileBuffer);
+            pageCount = pdfDoc.getPageCount();
+          } catch { pageCount = 1; }
+        }
 
         // Create document record in database
         const _documentIdResult = await db('documents').insert({
