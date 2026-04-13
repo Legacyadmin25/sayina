@@ -142,8 +142,8 @@ const loginUser = async (req, res, next) => {
       return next(new ApiError(401, 'Invalid credentials'));
     }
 
-    // Check if user is active
-    if (!user.is_active) {
+    // Check if user is active (knexSnakeCaseMappers may return camelCase)
+    if (!(user.isActive ?? user.is_active)) {
       return next(new ApiError(401, 'Account is deactivated, please contact support'));
     }
 
@@ -245,7 +245,7 @@ const refreshToken = async (req, res, next) => {
         .select('id', 'is_active')
         .first();
 
-      if (!user || !user.is_active) {
+      if (!user || !(user.isActive ?? user.is_active)) {
         return next(new ApiError(401, 'Invalid refresh token'));
       }
 
@@ -413,7 +413,7 @@ const forgotPassword = async (req, res, next) => {
       });
     }
 
-    if (!user.is_active) {
+    if (!(user.isActive ?? user.is_active)) {
       // Don't reveal if user is inactive
       return res.status(200).json({
         success: true,
