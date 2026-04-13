@@ -162,7 +162,7 @@ export default function PDFViewer({
   }
 
   return (
-    <div className="flex flex-col h-full border rounded-lg overflow-hidden">
+    <div className="flex flex-col h-full rounded-lg overflow-hidden">
       {/* Toolbar */}
       <div className="bg-white border-b border-secondary-200 p-2 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center space-x-2">
@@ -318,38 +318,41 @@ export default function PDFViewer({
         )}
       </div>
 
-      {/* PDF Viewer + field overlay */}
-      <div className="flex-1 relative overflow-auto">
-        {/* Render the actual PDF document */}
-        <DocumentViewer
-          file={showTranslated && translatedUrl ? translatedUrl : (pdfSource as File | string)}
-          onLoadSuccess={handleDocumentLoadSuccess}
-          currentPage={currentPage}
-          scale={scale}
-          watermark={watermark}
-        />
+      {/* PDF Viewer + field overlay — scrollable area */}
+      <div className="flex-1 overflow-auto bg-secondary-100">
+        {/* Inner wrapper sized to the rendered PDF so scroll works correctly */}
+        <div className="relative inline-block min-w-full">
+          {/* Render the actual PDF document */}
+          <DocumentViewer
+            file={showTranslated && translatedUrl ? translatedUrl : (pdfSource as File | string)}
+            onLoadSuccess={handleDocumentLoadSuccess}
+            currentPage={currentPage}
+            scale={scale}
+            watermark={watermark}
+          />
 
-        {/* Overlay: field placer (builder) or field interactor (signer) */}
-        {mode === 'builder' ? (
-          <FieldPlacer
-            currentPage={currentPage}
-            scale={scale}
-            activeTool={activeTool}
-            isPlacing={isPlacing}
-            setIsPlacing={setIsPlacing}
-            activeSignerId={activeSignerId}
-            fields={fields}
-            onChange={handleFieldChange}
-          />
-        ) : (
-          <FieldInteractor
-            currentPage={currentPage}
-            scale={scale}
-            fields={fields}
-            signerId={signerId}
-            onSubmit={handleSignSubmit}
-          />
-        )}
+          {/* Overlay: field placer (builder) or field interactor (signer) */}
+          {mode === 'builder' ? (
+            <FieldPlacer
+              currentPage={currentPage}
+              scale={scale}
+              activeTool={activeTool}
+              isPlacing={isPlacing}
+              setIsPlacing={setIsPlacing}
+              activeSignerId={activeSignerId}
+              fields={fields}
+              onChange={handleFieldChange}
+            />
+          ) : (
+            <FieldInteractor
+              currentPage={currentPage}
+              scale={scale}
+              fields={fields}
+              signerId={signerId}
+              onSubmit={handleSignSubmit}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

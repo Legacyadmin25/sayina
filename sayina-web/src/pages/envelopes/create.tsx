@@ -54,7 +54,7 @@ export default function CreateEnvelope() {
 
   return (
     <div className="min-h-screen bg-secondary-50 py-8">
-      <div className="max-w-3xl mx-auto px-4">
+      <div className={`mx-auto px-4 ${step === 3 ? 'max-w-6xl' : 'max-w-3xl'}`}>
         {/* Progress bar */}
         <div className="mb-8">
           <div className="flex items-center justify-between">

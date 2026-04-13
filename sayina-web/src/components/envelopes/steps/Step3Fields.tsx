@@ -165,16 +165,14 @@ export default function Step3Fields({ data, onBack, onNext }: Step3Props) {
           <span className="font-medium">Instructions:</span> Click on a field type in the toolbar, then click on the document where you want to place it. Fields can be dragged and resized.
         </div>
 
-        <div className="border rounded-lg h-[600px] relative">
+        <div className="border rounded-lg overflow-hidden" style={{ height: 'calc(100vh - 320px)', minHeight: 500 }}>
           {data.file ? (
-            <div className="h-[600px]">
-              <PDFViewer 
-                file={data.file} 
-                mode="builder"
-                fields={fields} 
-                onFieldChange={handleFieldsChange}
-              />
-            </div>
+            <PDFViewer
+              file={data.file}
+              mode="builder"
+              fields={fields}
+              onFieldChange={handleFieldsChange}
+            />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-secondary-50">
               <p className="text-secondary-500">No document uploaded. Please go back to Step 1.</p>

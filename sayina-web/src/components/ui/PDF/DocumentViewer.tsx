@@ -57,10 +57,7 @@ export default function DocumentViewer({
   }, []);
 
   return (
-    <div 
-      ref={containerRef} 
-      className="w-full h-full overflow-auto bg-secondary-100"
-    >
+    <div ref={containerRef} className="relative">
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-70 z-10">
           <div className="p-4 bg-white rounded-lg shadow-lg flex items-center space-x-3">
@@ -72,44 +69,35 @@ export default function DocumentViewer({
           </div>
         </div>
       )}
-      
-      <div 
-        style={{ 
-          transform: `scale(${scale})`,
-          transformOrigin: 'top left',
-        }}
-        className="inline-block"
-      >
-        <Document
-          file={file}
-          onLoadSuccess={handleDocumentLoadSuccess}
-          error={
-            <div className="text-center p-6">
-              <p className="text-red-500">Failed to load PDF. Please ensure it's a valid PDF document.</p>
-            </div>
-          }
-          loading={null}
-        >
-          <Page 
-            pageNumber={currentPage} 
-            renderTextLayer={false}
-            renderAnnotationLayer={false}
-          />
-        </Document>
 
-        {/* Watermark if provided */}
-        {watermark && (
-          <div 
-            className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-30 text-3xl font-bold text-secondary-400 rotate-45"
-            style={{ 
-              transform: `rotate(-45deg) scale(${1/scale})`,
-              transformOrigin: 'center',
-            }}
-          >
-            {watermark}
+      <Document
+        file={file}
+        onLoadSuccess={handleDocumentLoadSuccess}
+        error={
+          <div className="text-center p-6">
+            <p className="text-red-500">Failed to load PDF. Please ensure it's a valid PDF document.</p>
           </div>
-        )}
-      </div>
+        }
+        loading={null}
+      >
+        {/* Pass scale directly to Page so react-pdf sizes the canvas correctly */}
+        <Page
+          pageNumber={currentPage}
+          scale={scale}
+          renderTextLayer={false}
+          renderAnnotationLayer={false}
+        />
+      </Document>
+
+      {/* Watermark if provided */}
+      {watermark && (
+        <div
+          className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20 text-4xl font-bold text-secondary-400"
+          style={{ transform: 'rotate(-45deg)' }}
+        >
+          {watermark}
+        </div>
+      )}
     </div>
   );
 }
