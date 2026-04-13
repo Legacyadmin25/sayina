@@ -3,7 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect, ReactNode } from 'react';
 
-export type ActivePage = 'dashboard' | 'envelopes' | 'templates' | 'contacts' | 'reports' | 'account' | 'billing';
+export type ActivePage = 'dashboard' | 'envelopes' | 'templates' | 'contacts' | 'reports' | 'account' | 'billing' | 'promo-codes';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -16,6 +16,7 @@ export function DashboardLayout({ children, title = 'Dashboard', activePage }: D
   const [userInitials, setUserInitials] = useState('');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [greeting, setGreeting] = useState('Good morning');
+  const [isAdmin, setIsAdmin] = useState(false);
   const [envelopeCount] = useState(0); // Will come from API in future
 
   useEffect(() => {
@@ -28,6 +29,8 @@ export function DashboardLayout({ children, title = 'Dashboard', activePage }: D
         : storedName.slice(0, 2).toUpperCase();
       setUserInitials(initials);
     }
+    const role = localStorage.getItem('sayina_user_role') || '';
+    setIsAdmin(role === 'admin');
     const hour = new Date().getHours();
     setGreeting(hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening');
   }, []);
@@ -162,6 +165,28 @@ export function DashboardLayout({ children, title = 'Dashboard', activePage }: D
         <ul className="space-y-0.5">
           {accountNav.map(item => <NavItem key={item.key} item={item} onClick={onItemClick} />)}
         </ul>
+
+        {/* Admin-only section */}
+        {isAdmin && (
+          <div className="mt-6">
+            <p className="text-xs font-semibold text-[#D4A832]/60 uppercase tracking-wider mb-2 px-3">Admin</p>
+            <ul className="space-y-0.5">
+              <NavItem
+                item={{
+                  key: 'promo-codes',
+                  href: '/admin/promo-codes',
+                  label: 'Promo Codes',
+                  icon: (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M5 2a2 2 0 00-2 2v14l3.5-2 3.5 2 3.5-2 3.5 2V4a2 2 0 00-2-2H5zm4.707 3.707a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L8.414 10l1.293-1.293zm2.586 0l-1.293 1.293L12.293 8.293 11 7l3 3-3 3 1.293 1.293 3-3a1 1 0 000-1.414l-3-3z" clipRule="evenodd" />
+                    </svg>
+                  ),
+                }}
+                onClick={onItemClick}
+              />
+            </ul>
+          </div>
+        )}
       </nav>
 
       {/* Starter Plan + Sign Out */}
