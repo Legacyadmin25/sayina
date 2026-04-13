@@ -159,7 +159,9 @@ export default function Signup() {
                   />
                 </div>
                 {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone}</p>}
-                <p className="mt-1 text-xs text-secondary-400">{"We'll send a verification code to this number"}</p>
+                <p className="mt-1 text-xs text-secondary-400">
+                  Enter your number <strong>without</strong> the leading 0 — e.g. <span className="font-mono">821234567</span> not 0821234567. We&apos;ll send a verification code here.
+                </p>
               </div>
 
               {/* Password */}
