@@ -1,6 +1,5 @@
 'use client';
-import { useState, useRef } from 'react';
-import Draggable from 'react-draggable';
+import { useState, useRef, useCallback } from 'react';
 import { Field, FieldType } from '@/lib/types/envelope';
 import { cn } from '@/lib/utils';
 
@@ -15,15 +14,14 @@ const FIELD_DEFAULTS: Record<FieldType, { width: number; height: number; label: 
   stamp:     { width: 80,  height: 80,  label: 'Stamp'     },
 };
 
-// Colours per field type (tailwind-compatible inline styles)
 const FIELD_COLOURS: Record<FieldType, string> = {
-  signature: '#3B82F6',   // blue
-  initials:  '#8B5CF6',   // purple
-  text:      '#6B7280',   // gray
-  date:      '#10B981',   // green
-  checkbox:  '#F59E0B',   // amber
-  dropdown:  '#EC4899',   // pink
-  stamp:     '#EF4444',   // red
+  signature: '#3B82F6',
+  initials:  '#8B5CF6',
+  text:      '#6B7280',
+  date:      '#10B981',
+  checkbox:  '#F59E0B',
+  dropdown:  '#EC4899',
+  stamp:     '#EF4444',
 };
 
 interface FieldPlacerProps {
@@ -37,58 +35,27 @@ interface FieldPlacerProps {
   setIsPlacing: (isPlacing: boolean) => void;
 }
 
-export default function FieldPlacer({ 
-  fields, 
-  onChange, 
+export default function FieldPlacer({
+  fields,
+  onChange,
   currentPage,
   scale,
   activeTool,
   activeSignerId,
   isPlacing,
-  setIsPlacing
+  setIsPlacing,
 }: FieldPlacerProps) {
-  const [fieldBeingResized, setFieldBeingResized] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  
-  // Update field position
-  const updateFieldPosition = (fieldId: string, x: number, y: number) => {
-    const updatedFields = fields.map(field => {
-      if (field.id === fieldId) {
-        return { ...field, x, y };
-      }
-      return field;
-    });
-    
-    onChange(updatedFields);
-  };
-  
-  // Update field dimensions
-  const updateFieldDimensions = (fieldId: string, width: number, height: number) => {
-    const updatedFields = fields.map(field => {
-      if (field.id === fieldId) {
-        return { ...field, width, height };
-      }
-      return field;
-    });
-    
-    onChange(updatedFields);
-  };
-  
-  // Handle adding a new field
-  const handleAddField = (e: React.MouseEvent<HTMLDivElement>) => {
+
+  // ── Place a new field on click ───────────────────────────────────────────────
+  const handleContainerClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isPlacing || !containerRef.current) return;
-    
-    // Get container position and dimensions
-    const containerRect = containerRef.current.getBoundingClientRect();
-    
-    // Calculate relative position within the page
-    const x = (e.clientX - containerRect.left) / scale;
-    const y = (e.clientY - containerRect.top) / scale;
-    
-    // Create new field
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / scale;
+    const y = (e.clientY - rect.top) / scale;
     const defaults = FIELD_DEFAULTS[activeTool];
     const newField: Field = {
-      id: `field-${activeTool}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      id: `field-${activeTool}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
       type: activeTool,
       x,
       y,
@@ -100,116 +67,187 @@ export default function FieldPlacer({
       required: true,
       options: activeTool === 'dropdown' ? ['Option 1', 'Option 2', 'Option 3'] : undefined,
     };
-    
-    // Update fields
     onChange([...fields, newField]);
-    
-    // Reset placing mode
     setIsPlacing(false);
   };
-  
-  // Handle resize start
-  const handleResizeStart = (e: React.MouseEvent, fieldId: string) => {
-    e.stopPropagation();
-    setFieldBeingResized(fieldId);
-  };
-  
-  // Handle resize
-  const handleResize = (e: MouseEvent) => {
-    if (!fieldBeingResized || !containerRef.current) return;
-    
-    const containerRect = containerRef.current.getBoundingClientRect();
-    const field = fields.find(f => f.id === fieldBeingResized);
-    
-    if (!field) return;
-    
-    const width = Math.max(50, ((e.clientX - containerRect.left) / scale) - field.x);
-    const height = Math.max(30, ((e.clientY - containerRect.top) / scale) - field.y);
-    
-    updateFieldDimensions(fieldBeingResized, width, height);
-  };
-  
-  // Handle resize end
-  const handleResizeEnd = () => {
-    setFieldBeingResized(null);
-    document.removeEventListener('mousemove', handleResize);
-    document.removeEventListener('mouseup', handleResizeEnd);
-  };
-  
-  // Add event listeners for resize
-  if (fieldBeingResized) {
-    document.addEventListener('mousemove', handleResize);
-    document.addEventListener('mouseup', handleResizeEnd);
-  }
-  
-  // Remove field
+
+  // ── Remove a field ───────────────────────────────────────────────────────────
   const removeField = (e: React.MouseEvent, fieldId: string) => {
     e.stopPropagation();
-    const updatedFields = fields.filter(field => field.id !== fieldId);
-    onChange(updatedFields);
+    onChange(fields.filter(f => f.id !== fieldId));
   };
 
   return (
-    <div 
+    <div
       ref={containerRef}
-      className={cn(
-        "absolute inset-0 z-10", 
-        isPlacing ? "cursor-crosshair" : "pointer-events-none"
-      )}
-      onClick={handleAddField}
+      className={cn('absolute inset-0 z-10', isPlacing ? 'cursor-crosshair' : '')}
+      onClick={handleContainerClick}
     >
       {fields
-        .filter(field => field.page === currentPage)
+        .filter(f => f.page === currentPage)
         .map(field => (
-          <Draggable
+          <DraggableField
             key={field.id}
-            position={{ x: field.x * scale, y: field.y * scale }}
+            field={field}
             scale={scale}
-            onStop={(_, data) => {
-              updateFieldPosition(field.id, data.x / scale, data.y / scale);
-            }}
-            disabled={isPlacing}
-          >
-            <div
-              className={cn(
-                'absolute border-2 flex flex-col items-center justify-center select-none cursor-move rounded overflow-hidden',
-                fieldBeingResized === field.id ? 'z-20' : '',
-              )}
-              style={{
-                width: field.width * scale,
-                height: field.height * scale,
-                borderColor: FIELD_COLOURS[field.type],
-                backgroundColor: FIELD_COLOURS[field.type] + '18', // 10% opacity tint
-                borderStyle: 'dashed',
-              }}
-            >
-              {/* Label */}
-              <div
-                className="text-xs font-semibold uppercase tracking-wide truncate px-1"
-                style={{ color: FIELD_COLOURS[field.type], fontSize: `${Math.max(8, 11 * scale)}px` }}
-              >
-                {field.label || field.type}
-              </div>
-
-              {/* Resize handle */}
-              <div
-                className="absolute bottom-0 right-0 w-3 h-3 cursor-se-resize rounded-tl"
-                style={{ backgroundColor: FIELD_COLOURS[field.type] }}
-                onMouseDown={(e) => handleResizeStart(e, field.id)}
-              />
-
-              {/* Delete button */}
-              <div
-                className="absolute -top-2 -right-2 bg-white rounded-full p-0.5 border border-secondary-300 cursor-pointer shadow-sm z-10"
-                onClick={(e) => removeField(e, field.id)}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-secondary-600" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              </div>
-            </div>
-          </Draggable>
+            isPlacing={isPlacing}
+            containerRef={containerRef}
+            onMove={(id, x, y) =>
+              onChange(fields.map(f => f.id === id ? { ...f, x, y } : f))
+            }
+            onResize={(id, w, h) =>
+              onChange(fields.map(f => f.id === id ? { ...f, width: w, height: h } : f))
+            }
+            onRemove={removeField}
+          />
         ))}
+    </div>
+  );
+}
+
+// ── Individual draggable/resizable field ─────────────────────────────────────
+interface DraggableFieldProps {
+  field: Field;
+  scale: number;
+  isPlacing: boolean;
+  containerRef: React.RefObject<HTMLDivElement | null>;
+  onMove: (id: string, x: number, y: number) => void;
+  onResize: (id: string, w: number, h: number) => void;
+  onRemove: (e: React.MouseEvent, id: string) => void;
+}
+
+function DraggableField({ field, scale, isPlacing, containerRef, onMove, onResize, onRemove }: DraggableFieldProps) {
+  const colour = FIELD_COLOURS[field.type];
+
+  // ── Drag ──────────────────────────────────────────────────────────────────
+  const dragStart = useRef<{ mx: number; my: number; fx: number; fy: number } | null>(null);
+
+  const handleDragPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (isPlacing) return;
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragStart.current = { mx: e.clientX, my: e.clientY, fx: field.x, fy: field.y };
+  }, [isPlacing, field.x, field.y]);
+
+  const handleDragPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragStart.current) return;
+    e.stopPropagation();
+    const dx = (e.clientX - dragStart.current.mx) / scale;
+    const dy = (e.clientY - dragStart.current.my) / scale;
+    onMove(field.id, dragStart.current.fx + dx, dragStart.current.fy + dy);
+  }, [field.id, scale, onMove]);
+
+  const handleDragPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    dragStart.current = null;
+  }, []);
+
+  // ── Resize ────────────────────────────────────────────────────────────────
+  const resizeStart = useRef<{ mx: number; my: number; fw: number; fh: number } | null>(null);
+
+  const handleResizePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    resizeStart.current = { mx: e.clientX, my: e.clientY, fw: field.width, fh: field.height };
+  }, [field.width, field.height]);
+
+  const handleResizePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!resizeStart.current) return;
+    e.stopPropagation();
+    const dw = (e.clientX - resizeStart.current.mx) / scale;
+    const dh = (e.clientY - resizeStart.current.my) / scale;
+    onResize(field.id,
+      Math.max(24, resizeStart.current.fw + dw),
+      Math.max(20, resizeStart.current.fh + dh),
+    );
+  }, [field.id, scale, onResize]);
+
+  const handleResizePointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    resizeStart.current = null;
+  }, []);
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: field.x * scale,
+        top: field.y * scale,
+        width: field.width * scale,
+        height: field.height * scale,
+        border: `2px dashed ${colour}`,
+        backgroundColor: colour + '18',
+        borderRadius: 4,
+        overflow: 'hidden',
+        cursor: isPlacing ? 'crosshair' : 'move',
+        userSelect: 'none',
+        touchAction: 'none',
+        zIndex: 10,
+      }}
+      onPointerDown={handleDragPointerDown}
+      onPointerMove={handleDragPointerMove}
+      onPointerUp={handleDragPointerUp}
+    >
+      {/* Label */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100%',
+        color: colour,
+        fontSize: Math.max(9, 11 * scale),
+        fontWeight: 600,
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em',
+        pointerEvents: 'none',
+        padding: '0 4px',
+      }}>
+        {field.label || field.type}
+      </div>
+
+      {/* Resize handle (bottom-right corner) */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          right: 0,
+          width: 12,
+          height: 12,
+          backgroundColor: colour,
+          cursor: 'se-resize',
+          touchAction: 'none',
+          borderTopLeftRadius: 3,
+        }}
+        onPointerDown={handleResizePointerDown}
+        onPointerMove={handleResizePointerMove}
+        onPointerUp={handleResizePointerUp}
+      />
+
+      {/* Delete button (top-right) */}
+      <div
+        style={{
+          position: 'absolute',
+          top: -10,
+          right: -10,
+          backgroundColor: 'white',
+          border: '1px solid #d1d5db',
+          borderRadius: '50%',
+          width: 18,
+          height: 18,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          zIndex: 20,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+        }}
+        onPointerDown={e => e.stopPropagation()}
+        onClick={e => onRemove(e, field.id)}
+      >
+        <svg width="10" height="10" viewBox="0 0 20 20" fill="#6b7280">
+          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd"/>
+        </svg>
+      </div>
     </div>
   );
 }

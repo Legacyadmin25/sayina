@@ -116,7 +116,7 @@ export default function PDFViewer({
   };
 
   // Handle tool selection for field placement
-  const handleToolSelect = (tool: 'signature' | 'text' | 'date' | 'checkbox') => {
+  const handleToolSelect = (tool: import('@/lib/types/envelope').FieldType) => {
     setActiveTool(tool);
     setIsPlacing(true);
   };

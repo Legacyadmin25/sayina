@@ -88,26 +88,27 @@ export default function FieldInteractor({
             transformOrigin: 'top left',
           }}
         >
-          {field.type === 'signature' ? (
-            <div className="w-full h-full bg-white">
+          {(field.type === 'signature' || field.type === 'initials') ? (
+            <div className="w-full h-full bg-white relative">
               <SignatureCanvas
                 ref={(ref) => registerSignatureRef(field.id, ref)}
-                penColor="#DAB44A"
-                canvasProps={{ 
-                  width: field.width * scale, 
-                  height: field.height * scale, 
-                  className: 'border border-secondary-200' 
+                penColor="#1e3a5f"
+                canvasProps={{
+                  width: field.width * scale,
+                  height: field.height * scale,
+                  className: 'border border-secondary-200'
                 }}
                 clearOnResize={false}
               />
-              <div className="absolute top-0 right-0">
-                <button 
-                  className="bg-white p-1 text-xs border border-secondary-200 rounded"
-                  onClick={() => sigCanvasRefs.current[field.id]?.clear()}
-                >
-                  Clear
-                </button>
-              </div>
+              <button
+                className="absolute top-0 right-0 bg-white px-1.5 py-0.5 text-xs border border-secondary-200 rounded-bl"
+                onClick={() => sigCanvasRefs.current[field.id]?.clear()}
+              >
+                Clear
+              </button>
+              <span className="absolute bottom-0 left-1 text-xs text-secondary-400 pointer-events-none">
+                {field.type === 'initials' ? 'Initials' : 'Sign here'}
+              </span>
             </div>
           ) : field.type === 'date' ? (
             <input
@@ -124,11 +125,26 @@ export default function FieldInteractor({
                 onChange={(e) => handleFieldChange(field.id, e.target.checked)}
               />
             </div>
+          ) : field.type === 'dropdown' ? (
+            <select
+              className="w-full h-full p-1 text-sm bg-white border-0"
+              onChange={(e) => handleFieldChange(field.id, e.target.value)}
+            >
+              {(field.options || []).map((opt, i) => (
+                <option key={i} value={opt}>{opt}</option>
+              ))}
+            </select>
+          ) : field.type === 'stamp' ? (
+            <div className="w-full h-full flex items-center justify-center bg-white">
+              <div className="border-4 border-red-500 rounded-full p-2 text-red-500 text-xs font-bold text-center leading-tight opacity-80">
+                STAMP
+              </div>
+            </div>
           ) : (
             <input
               type="text"
               className="w-full h-full p-1 text-sm"
-              placeholder="Enter text here..."
+              placeholder={field.label || 'Enter text…'}
               onChange={(e) => handleFieldChange(field.id, e.target.value)}
             />
           )}
