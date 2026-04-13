@@ -11,7 +11,7 @@ const logger = require('../config/winston');
 const applyPromoCode = async (req, res, next) => {
   try {
     const { code } = req.body;
-    const orgId = req.user.org_id;
+    const orgId = req.user.orgId ?? req.user.org_id;
 
     if (!code) throw new ApiError(400, 'Promo code is required');
 
@@ -209,6 +209,7 @@ const createPromoCode = async (req, res, next) => {
         expires_at: expires_at || null,
         notes: notes || null,
         created_by: req.user.id,
+        is_active: true,
       })
       .returning('*');
 
@@ -230,9 +231,10 @@ const togglePromoCode = async (req, res, next) => {
     const promo = await db('promo_codes').where({ id }).first();
     if (!promo) throw new ApiError(404, 'Promo code not found');
 
+    const currentActive = promo.isActive ?? promo.is_active;
     const [updated] = await db('promo_codes')
       .where({ id })
-      .update({ is_active: !promo.is_active })
+      .update({ is_active: !currentActive })
       .returning('*');
 
     res.json({ success: true, data: updated });

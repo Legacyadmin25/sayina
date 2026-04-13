@@ -5,14 +5,14 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 interface PromoCode {
   id: string;
   code: string;
-  plan_name: string;
-  duration_days: number;
-  max_uses: number | null;
-  used_count: number;
-  is_active: boolean;
-  expires_at: string | null;
+  planName: string;
+  durationDays: number;
+  maxUses: number | null;
+  usedCount: number;
+  isActive: boolean;
+  expiresAt: string | null;
   notes: string | null;
-  created_at: string;
+  createdAt: string;
 }
 
 interface Plan {
@@ -294,7 +294,7 @@ export default function AdminPromoCodes() {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {codes.map(c => (
-                <tr key={c.id} className={!c.is_active ? 'opacity-50' : ''}>
+                <tr key={c.id} className={!c.isActive ? 'opacity-50' : ''}>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <span className="font-mono font-bold text-gray-900 tracking-widest">{c.code}</span>
@@ -316,15 +316,15 @@ export default function AdminPromoCodes() {
                       </button>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-gray-700">{c.plan_name}</td>
-                  <td className="px-4 py-3 text-gray-700">{c.duration_days} days</td>
+                  <td className="px-4 py-3 text-gray-700">{c.planName}</td>
+                  <td className="px-4 py-3 text-gray-700">{c.durationDays} days</td>
                   <td className="px-4 py-3 text-gray-700">
-                    {c.used_count}{c.max_uses ? ` / ${c.max_uses}` : ''}
+                    {c.usedCount}{c.maxUses ? ` / ${c.maxUses}` : ''}
                   </td>
                   <td className="px-4 py-3 text-gray-400 text-xs max-w-[150px] truncate">{c.notes || '—'}</td>
                   <td className="px-4 py-3">
-                    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${c.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                      {c.is_active ? 'Active' : 'Inactive'}
+                    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${c.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                      {c.isActive ? 'Active' : 'Inactive'}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
@@ -332,7 +332,7 @@ export default function AdminPromoCodes() {
                       onClick={() => toggleCode(c.id)}
                       className="text-xs text-gray-400 hover:text-gray-700 underline"
                     >
-                      {c.is_active ? 'Deactivate' : 'Activate'}
+                      {c.isActive ? 'Deactivate' : 'Activate'}
                     </button>
                   </td>
                 </tr>
