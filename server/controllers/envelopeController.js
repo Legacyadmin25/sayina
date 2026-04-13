@@ -382,92 +382,107 @@ const deleteEnvelope = async (req, res, next) => {
 };
 
 /**
- * @desc    Add signer to envelope
+ * @desc    Add signer(s) to envelope
  * @route   POST /api/v1/envelopes/:id/signers
  * @access  Private
+ *
+ * Accepts two body shapes:
+ *   Batch (from wizard): { signers: [{name, email, phone, role}, ...] }
+ *   Single (legacy):     { email, first_name, last_name, phone, role, order }
  */
 const addSigner = async (req, res, next) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return next(new ApiError(400, 'Validation error', errors.array()));
-    }
-
     const { id } = req.params;
-    const { email, first_name, last_name, order } = req.body;
     const userId = req.user.id;
-    const orgId = req.user.org_id;
+    const orgId = req.user.orgId ?? req.user.org_id;
 
-    // Check if envelope exists and belongs to organization
-    const envelope = await db('envelopes')
-      .where({ id, org_id: orgId })
-      .first();
+    // Verify envelope exists and belongs to this org
+    const envelope = await db('envelopes').where({ id, org_id: orgId }).first();
+    if (!envelope) throw new ApiError(404, 'Envelope not found');
+    if (envelope.status !== 'draft') throw new ApiError(400, 'Signers can only be added to envelopes in draft status');
 
-    if (!envelope) {
-      throw new ApiError(404, 'Envelope not found');
+    // ── Normalise incoming data into a flat array of signer records ──────────
+    let signerList = [];
+
+    if (Array.isArray(req.body.signers)) {
+      // Batch form: { signers: [{name, email, phone, role}] }
+      signerList = req.body.signers.map((s, idx) => {
+        const nameParts = (s.name || '').trim().split(/\s+/);
+        const first_name = nameParts[0] || 'Unknown';
+        const last_name  = nameParts.slice(1).join(' ') || '';
+        return {
+          email:      (s.email || '').trim().toLowerCase(),
+          first_name,
+          last_name,
+          phone:      s.phone || null,
+          role:       ['signer', 'approver', 'cc', 'viewer'].includes(s.role) ? s.role : 'signer',
+          order:      idx + 1,
+        };
+      });
+    } else {
+      // Single form (legacy / direct API)
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) return next(new ApiError(400, 'Validation error', errors.array()));
+      const { email, first_name, last_name, phone, role, order } = req.body;
+      const highestOrder = await db('signers').where({ envelope_id: id }).max('order as max_order').first();
+      signerList = [{
+        email: (email || '').trim().toLowerCase(),
+        first_name,
+        last_name,
+        phone: phone || null,
+        role: ['signer', 'approver', 'cc', 'viewer'].includes(role) ? role : 'signer',
+        order: order || (highestOrder?.max_order || 0) + 1,
+      }];
     }
 
-    // Check if envelope is in draft status
-    if (envelope.status !== 'draft') {
-      throw new ApiError(400, 'Signers can only be added to envelopes in draft status');
+    if (signerList.length === 0) throw new ApiError(400, 'At least one signer is required');
+
+    // ── Insert each signer ───────────────────────────────────────────────────
+    const createdSigners = [];
+
+    for (const s of signerList) {
+      if (!s.email || !/\S+@\S+\.\S+/.test(s.email)) continue; // skip invalid
+
+      // Skip duplicates silently
+      const exists = await db('signers').where({ envelope_id: id, email: s.email }).first();
+      if (exists) { createdSigners.push(exists); continue; }
+
+      const newId = uuidv4();
+      await db('signers').insert({
+        id:          newId,
+        envelope_id: id,
+        email:       s.email,
+        first_name:  s.first_name,
+        last_name:   s.last_name,
+        phone:       s.phone,
+        role:        s.role,
+        order:       s.order,
+        status:      'pending',
+      });
+
+      await db('events').insert({
+        envelope_id: id,
+        user_id:     userId,
+        action:      'signer_added',
+        metadata:    JSON.stringify({
+          signer_id:    newId,
+          signer_email: s.email,
+          signer_name:  `${s.first_name} ${s.last_name}`.trim(),
+          signer_role:  s.role,
+          signer_order: s.order,
+        }),
+        ip_address: req.ip,
+        user_agent: req.headers['user-agent'],
+      });
+
+      const created = await db('signers').where({ id: newId }).first();
+      createdSigners.push(created);
     }
-
-    // Check if signer with this email already exists for this envelope
-    const existingSigner = await db('signers')
-      .where({ envelope_id: id, email })
-      .first();
-
-    if (existingSigner) {
-      throw new ApiError(400, 'A signer with this email already exists for this envelope');
-    }
-
-    // Get the highest order if not specified
-    let signerOrder = order;
-    if (!signerOrder) {
-      const highestOrder = await db('signers')
-        .where({ envelope_id: id })
-        .max('order as max_order')
-        .first();
-
-      signerOrder = (highestOrder.max_order || 0) + 1;
-    }
-
-    // Create signer
-    const _signerIdResult = await db('signers').insert({
-      id: uuidv4(),
-      envelope_id: id,
-      email,
-      first_name,
-      last_name,
-      order: signerOrder,
-      status: 'pending'
-    }).returning('id');
-    const signerId = _signerIdResult[0]?.id ?? _signerIdResult[0];
-
-    // Log event
-    await db('events').insert({
-      envelope_id: id,
-      user_id: userId,
-      action: 'signer_added',
-      metadata: JSON.stringify({
-        signer_id: signerId,
-        signer_email: email,
-        signer_name: `${first_name} ${last_name}`,
-        signer_order: signerOrder
-      }),
-      ip_address: req.ip,
-      user_agent: req.headers['user-agent']
-    });
-
-    // Get the created signer
-    const signer = await db('signers')
-      .where({ id: signerId })
-      .first();
 
     res.status(201).json({
       success: true,
-      message: 'Signer added successfully',
-      data: { signer }
+      message: `${createdSigners.length} signer(s) added successfully`,
+      data: { signers: createdSigners },
     });
   } catch (error) {
     next(error);

@@ -326,8 +326,18 @@ export default function PDFViewer({
         )}
       </div>
 
-      {/* PDF Viewer */}
-      <div className="flex-1 relative">
+      {/* PDF Viewer + field overlay */}
+      <div className="flex-1 relative overflow-auto">
+        {/* Render the actual PDF document */}
+        <DocumentViewer
+          file={showTranslated && translatedUrl ? translatedUrl : (pdfSource as File | string)}
+          onLoadSuccess={handleDocumentLoadSuccess}
+          currentPage={currentPage}
+          scale={scale}
+          watermark={watermark}
+        />
+
+        {/* Overlay: field placer (builder) or field interactor (signer) */}
         {mode === 'builder' ? (
           <FieldPlacer
             currentPage={currentPage}

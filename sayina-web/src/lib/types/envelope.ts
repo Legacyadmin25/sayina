@@ -1,9 +1,19 @@
 // Shared types for envelope builder flow
 
+export type SignerRole = 'signer' | 'cc' | 'viewer' | 'approver';
+
+export const SIGNER_ROLE_LABELS: Record<SignerRole, string> = {
+  signer:   'Must Sign',
+  approver: 'Approver',
+  cc:       'Receives a Copy',
+  viewer:   'Read Only',
+};
+
 export interface Signer {
   name: string;
   email: string;
   phone: string;
+  role: SignerRole;
 }
 
 export interface Field {

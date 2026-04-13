@@ -2,16 +2,25 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { Step2Props, Signer } from '@/lib/types/envelope';
+import { Step2Props, Signer, SignerRole, SIGNER_ROLE_LABELS } from '@/lib/types/envelope';
 
 // Using shared types from envelope.ts
 
+const ROLE_ICONS: Record<SignerRole, string> = {
+  signer:   '✍️',
+  approver: '✅',
+  cc:       '📋',
+  viewer:   '👁️',
+};
+
 export default function Step2Signers({ data, onBack, onNext }: Step2Props) {
-  const [signers, setSigners] = useState<Signer[]>(data.signers.length > 0 ? data.signers : [{ name: '', email: '', phone: '' }]);
+  const [signers, setSigners] = useState<Signer[]>(
+    data.signers.length > 0 ? data.signers : [{ name: '', email: '', phone: '', role: 'signer' }]
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const addSigner = () => {
-    setSigners([...signers, { name: '', email: '', phone: '' }]);
+    setSigners([...signers, { name: '', email: '', phone: '', role: 'signer' }]);
   };
 
   const removeSigner = (index: number) => {
@@ -22,7 +31,7 @@ export default function Step2Signers({ data, onBack, onNext }: Step2Props) {
     }
   };
 
-  const updateSigner = (index: number, field: keyof Signer, value: string) => {
+  const updateSigner = (index: number, field: keyof Signer, value: string | SignerRole) => {
     const updatedSigners = [...signers];
     updatedSigners[index] = { ...updatedSigners[index], [field]: value };
     setSigners(updatedSigners);
@@ -72,7 +81,7 @@ export default function Step2Signers({ data, onBack, onNext }: Step2Props) {
           {signers.map((signer, index) => (
             <div key={index} className="p-4 border border-secondary-200 rounded-lg relative">
               {signers.length > 1 && (
-                <button 
+                <button
                   onClick={() => removeSigner(index)}
                   className="absolute top-2 right-2 text-secondary-400 hover:text-secondary-600"
                   aria-label="Remove signer"
@@ -82,10 +91,40 @@ export default function Step2Signers({ data, onBack, onNext }: Step2Props) {
                   </svg>
                 </button>
               )}
-              
+
+              {/* Role selector */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-secondary-700 mb-1">
+                  Recipient Role
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {(Object.keys(SIGNER_ROLE_LABELS) as SignerRole[]).map((role) => (
+                    <button
+                      key={role}
+                      type="button"
+                      onClick={() => updateSigner(index, 'role', role)}
+                      className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-lg border text-xs font-medium transition-colors ${
+                        (signer.role || 'signer') === role
+                          ? 'border-primary-500 bg-primary-50 text-primary-700'
+                          : 'border-secondary-200 text-secondary-600 hover:bg-secondary-50'
+                      }`}
+                    >
+                      <span className="text-base">{ROLE_ICONS[role]}</span>
+                      <span>{SIGNER_ROLE_LABELS[role]}</span>
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-1.5 text-xs text-secondary-400">
+                  {(signer.role || 'signer') === 'signer'   && 'This person must sign the document before it is complete.'}
+                  {signer.role === 'approver' && 'This person must approve the document before signers are notified.'}
+                  {signer.role === 'cc'       && 'This person receives a copy by email but does not sign.'}
+                  {signer.role === 'viewer'   && 'This person can view the document but takes no action.'}
+                </p>
+              </div>
+
               <div className="space-y-4">
                 <Input
-                  label={`Signer ${index + 1} Name`}
+                  label={`Recipient ${index + 1} Name`}
                   value={signer.name}
                   onChange={(e) => updateSigner(index, 'name', e.target.value)}
                   error={errors[`name-${index}`]}
@@ -99,16 +138,19 @@ export default function Step2Signers({ data, onBack, onNext }: Step2Props) {
                   error={errors[`email-${index}`]}
                   fullWidth
                 />
-                <Input
-                  label="Phone Number (for SMS OTP verification)"
-                  type="tel"
-                  value={signer.phone}
-                  onChange={(e) => updateSigner(index, 'phone', e.target.value)}
-                  error={errors[`phone-${index}`]}
-                  helperText="Optional, but required for SMS OTP verification"
-                  leftAddon={<span className="text-sm">+27</span>}
-                  fullWidth
-                />
+                {/* Phone only needed for Must Sign / Approver */}
+                {(!signer.role || signer.role === 'signer' || signer.role === 'approver') && (
+                  <Input
+                    label="Phone Number (for SMS OTP verification)"
+                    type="tel"
+                    value={signer.phone}
+                    onChange={(e) => updateSigner(index, 'phone', e.target.value)}
+                    error={errors[`phone-${index}`]}
+                    helperText="Optional, but required for SMS OTP verification"
+                    leftAddon={<span className="text-sm">+27</span>}
+                    fullWidth
+                  />
+                )}
               </div>
             </div>
           ))}

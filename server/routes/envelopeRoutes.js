@@ -87,10 +87,8 @@ router.post(
   '/:id/signers',
   [
     param('id').isUUID().withMessage('Invalid envelope ID format'),
-    body('email').isEmail().withMessage('Valid email is required'),
-    body('first_name').trim().notEmpty().withMessage('First name is required'),
-    body('last_name').trim().notEmpty().withMessage('Last name is required'),
-    body('order').optional().isInt({ min: 1 }).withMessage('Order must be a positive integer'),
+    // Allow batch { signers: [...] } OR single { email, first_name, last_name }
+    // Full validation is done inside the controller to support both shapes
     validationErrorHandler
   ],
   envelopeController.addSigner

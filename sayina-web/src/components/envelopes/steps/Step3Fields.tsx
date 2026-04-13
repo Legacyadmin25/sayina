@@ -49,24 +49,31 @@ export default function Step3Fields({ data, onBack, onNext }: Step3Props) {
     }
   };
 
+  // Signers who actually need fields placed (not cc/viewer recipients)
+  const activeSigners = data.signers.filter(s => !s.role || s.role === 'signer' || s.role === 'approver');
+
   // Function to validate fields before proceeding
   const validateFields = () => {
-    if (fields.length === 0) {
+    if (activeSigners.length > 0 && fields.length === 0) {
       alert('Please add at least one field to the document.');
       return false;
     }
-    
-    // Check if each signer has at least one field
-    const signerIds = data.signers.map((_, index) => index);
-    const fieldSignerIds = fields.map(field => field.signerId);
-    
-    const missingSigner = signerIds.find(id => !fieldSignerIds.includes(id));
-    
+
+    // Check that each active signer (must-sign / approver) has at least one field
+    const activeSignerIndices = data.signers
+      .map((s, i) => ({ s, i }))
+      .filter(({ s }) => !s.role || s.role === 'signer' || s.role === 'approver')
+      .map(({ i }) => i);
+
+    const fieldSignerIds = fields.map(f => f.signerId);
+    const missingSigner = activeSignerIndices.find(id => !fieldSignerIds.includes(id));
+
     if (missingSigner !== undefined) {
-      alert(`Signer ${missingSigner + 1} has no fields assigned. Please add fields for all signers.`);
+      const name = data.signers[missingSigner]?.name || `Signer ${missingSigner + 1}`;
+      alert(`"${name}" has no fields assigned. Please place at least one field for every signer.`);
       return false;
     }
-    
+
     return true;
   };
 
@@ -115,22 +122,43 @@ export default function Step3Fields({ data, onBack, onNext }: Step3Props) {
       </CardHeader>
       <CardContent>
         <div className="mb-4">
-          <div className="text-sm font-medium text-secondary-700 mb-2">Current Signer:</div>
+          <div className="text-sm font-medium text-secondary-700 mb-2">Placing fields for:</div>
           <div className="flex items-center space-x-2 overflow-x-auto py-1">
-            {data.signers.map((signer, index) => (
-              <button
-                key={index}
-                className={`px-3 py-1 rounded-full text-sm whitespace-nowrap ${
-                  activeSignerId === index
-                    ? 'bg-primary-500 text-white'
-                    : 'bg-secondary-100 text-secondary-700 hover:bg-secondary-200'
-                }`}
-                onClick={() => setActiveSignerId(index)}
-              >
-                {signer.name || `Signer ${index + 1}`}
-              </button>
-            ))}
+            {activeSigners.length === 0 ? (
+              <p className="text-xs text-secondary-400 italic">All recipients are CC / Read Only — no fields needed. You can continue.</p>
+            ) : (
+              activeSigners.map((signer) => {
+                const originalIndex = data.signers.indexOf(signer);
+                return (
+                  <button
+                    key={originalIndex}
+                    className={`px-3 py-1 rounded-full text-sm whitespace-nowrap ${
+                      activeSignerId === originalIndex
+                        ? 'bg-primary-500 text-white'
+                        : 'bg-secondary-100 text-secondary-700 hover:bg-secondary-200'
+                    }`}
+                    onClick={() => setActiveSignerId(originalIndex)}
+                  >
+                    {signer.name || `Signer ${originalIndex + 1}`}
+                    {signer.role === 'approver' && <span className="ml-1 text-xs opacity-75">(Approver)</span>}
+                  </button>
+                );
+              })
+            )}
           </div>
+
+          {/* CC/Viewer recipients summary */}
+          {data.signers.some(s => s.role === 'cc' || s.role === 'viewer') && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {data.signers
+                .filter(s => s.role === 'cc' || s.role === 'viewer')
+                .map((s, i) => (
+                  <span key={i} className="text-xs px-2 py-0.5 rounded-full bg-secondary-100 text-secondary-500">
+                    {s.role === 'cc' ? '📋' : '👁️'} {s.name || s.email} — {s.role === 'cc' ? 'receives copy' : 'read only'}
+                  </span>
+                ))}
+            </div>
+          )}
         </div>
 
         <div className="text-sm text-secondary-500 mb-2">
