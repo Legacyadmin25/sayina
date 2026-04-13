@@ -81,17 +81,79 @@ const sendSMSOTP = async (phone, otp) => {
 };
 
 /**
- * Send OTP via email
+ * Build the OTP email HTML body (shared between Resend and nodemailer)
+ */
+const buildOTPEmailHTML = (otp, firstName) => `
+  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
+    <div style="text-align: center; margin-bottom: 20px;">
+      <h2 style="color: #3B82F6;">Sayina E-Signature Service</h2>
+    </div>
+    <p>Hello ${firstName || 'there'},</p>
+    <p>Your verification code for Sayina is:</p>
+    <div style="background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; margin: 20px 0; border-radius: 5px;">
+      ${otp}
+    </div>
+    <p>This code is valid for ${process.env.OTP_EXPIRY_MINUTES || 10} minutes.</p>
+    <p>If you didn't request this code, please ignore this email.</p>
+    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; font-size: 12px; color: #666;">
+      <p>This is an automated message, please do not reply to this email.</p>
+      <p>&copy; ${new Date().getFullYear()} Sayina. All rights reserved.</p>
+    </div>
+  </div>
+`;
+
+/**
+ * Send OTP via email.
+ * Uses Resend HTTP API when RESEND_API_KEY is set (works on Railway — pure HTTPS).
+ * Falls back to nodemailer SMTP for local development.
  * @param {string} email - Email to send OTP to
  * @param {string} otp - OTP to send
+ * @param {string} firstName - Recipient first name (optional)
  * @returns {Promise<object>} - Response from email sending
  */
 const sendEmailOTP = async (email, otp, firstName = '') => {
+  const html = buildOTPEmailHTML(otp, firstName);
+
+  // ── Resend HTTP API (Railway production) ───────────────────────────────────
+  if (process.env.RESEND_API_KEY) {
+    try {
+      const response = await axios.post(
+        'https://api.resend.com/emails',
+        {
+          from: process.env.EMAIL_FROM || 'Sayina <onboarding@resend.dev>',
+          to: [email],
+          subject: 'Sayina Verification Code',
+          html
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 15000
+        }
+      );
+
+      return {
+        success: true,
+        data: response.data,
+        message: 'OTP sent successfully via email (Resend)'
+      };
+    } catch (error) {
+      console.error('Error sending email OTP via Resend:', error.response?.data || error.message);
+      return {
+        success: false,
+        error: error.response?.data || error.message,
+        message: 'Failed to send OTP via email (Resend)'
+      };
+    }
+  }
+
+  // ── Nodemailer SMTP fallback (local dev) ────────────────────────────────────
   try {
-    // Create email transporter
     const transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
-      port: process.env.EMAIL_PORT,
+      port: parseInt(process.env.EMAIL_PORT || '587'),
       secure: process.env.EMAIL_PORT === '465',
       auth: {
         user: process.env.EMAIL_USER,
@@ -99,46 +161,24 @@ const sendEmailOTP = async (email, otp, firstName = '') => {
       }
     });
 
-    // Prepare email content
-    const mailOptions = {
+    const info = await transporter.sendMail({
       from: process.env.EMAIL_FROM,
       to: email,
       subject: 'Sayina Verification Code',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
-          <div style="text-align: center; margin-bottom: 20px;">
-            <h2 style="color: #3B82F6;">Sayina E-Signature Service</h2>
-          </div>
-          <p>Hello ${firstName || 'there'},</p>
-          <p>Your verification code for Sayina is:</p>
-          <div style="background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; margin: 20px 0; border-radius: 5px;">
-            ${otp}
-          </div>
-          <p>This code is valid for ${process.env.OTP_EXPIRY_MINUTES || 10} minutes.</p>
-          <p>If you didn't request this code, please ignore this email.</p>
-          <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; font-size: 12px; color: #666;">
-            <p>This is an automated message, please do not reply to this email.</p>
-            <p>&copy; ${new Date().getFullYear()} Sayina. All rights reserved.</p>
-          </div>
-        </div>
-      `
-    };
-
-    // Send email
-    const info = await transporter.sendMail(mailOptions);
+      html
+    });
 
     return {
       success: true,
       data: info,
-      message: 'OTP sent successfully via email'
+      message: 'OTP sent successfully via email (SMTP)'
     };
   } catch (error) {
-    console.error('Error sending email OTP:', error);
-    
+    console.error('Error sending email OTP via SMTP:', error);
     return {
       success: false,
       error: error.message,
-      message: 'Failed to send OTP via email'
+      message: 'Failed to send OTP via email (SMTP)'
     };
   }
 };
