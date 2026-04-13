@@ -298,7 +298,8 @@ const sendVerificationOTP = async (req, res, next) => {
       return next(new ApiError(404, 'User not found'));
     }
 
-    if (user.is_email_verified) {
+    // knexSnakeCaseMappers converts snake_case → camelCase — support both forms
+    if (user.isEmailVerified ?? user.is_email_verified) {
       return next(new ApiError(400, 'Email already verified'));
     }
 
@@ -352,7 +353,8 @@ const verifyEmail = async (req, res, next) => {
       return next(new ApiError(404, 'User not found'));
     }
 
-    if (user.is_email_verified) {
+    // knexSnakeCaseMappers converts snake_case → camelCase — support both forms
+    if (user.isEmailVerified ?? user.is_email_verified) {
       return next(new ApiError(400, 'Email already verified'));
     }
 
@@ -614,29 +616,38 @@ const getUserProfile = async (req, res, next) => {
       return next(new ApiError(404, 'User not found'));
     }
 
-    // Get organization details
-    const organization = await db('organizations')
-      .where({ id: user.org_id })
-      .select('id', 'name', 'email', 'phone', 'address', 'city', 'state', 'postal_code', 'country', 'logo_path', 'primary_color', 'secondary_color', 'sms_credits')
-      .first();
+    // knexSnakeCaseMappers converts snake_case → camelCase — support both forms
+    const profileOrgId = user.orgId ?? user.org_id;
 
-    // Get subscription details
-    const subscription = await db('subscriptions')
-      .join('plans', 'subscriptions.plan_id', 'plans.id')
-      .where('subscriptions.org_id', user.org_id)
-      .where('subscriptions.status', 'active')
-      .select(
-        'plans.id as plan_id',
-        'plans.name as plan_name',
-        'plans.envelope_limit',
-        'plans.sms_credits',
-        'plans.custom_branding',
-        'plans.remove_watermark',
-        'plans.api_access',
-        'plans.priority_support',
-        'subscriptions.next_billing_date'
-      )
-      .first();
+    // Get organization details only if user belongs to one
+    let organization = null;
+    let subscription = null;
+
+    if (profileOrgId) {
+      organization = await db('organizations')
+        .where({ id: profileOrgId })
+        .select('id', 'name', 'email', 'phone', 'address', 'city', 'state', 'postal_code', 'country', 'logo_path', 'primary_color', 'secondary_color', 'sms_credits')
+        .first()
+        .catch(() => null);
+
+      subscription = await db('subscriptions')
+        .join('plans', 'subscriptions.plan_id', 'plans.id')
+        .where('subscriptions.org_id', profileOrgId)
+        .where('subscriptions.status', 'active')
+        .select(
+          'plans.id as plan_id',
+          'plans.name as plan_name',
+          'plans.envelope_limit',
+          'plans.sms_credits',
+          'plans.custom_branding',
+          'plans.remove_watermark',
+          'plans.api_access',
+          'plans.priority_support',
+          'subscriptions.next_billing_date'
+        )
+        .first()
+        .catch(() => null);
+    }
 
     res.status(200).json({
       success: true,
