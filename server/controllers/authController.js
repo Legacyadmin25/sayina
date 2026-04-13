@@ -142,8 +142,15 @@ const loginUser = async (req, res, next) => {
       return next(new ApiError(401, 'Invalid credentials'));
     }
 
-    // Check if user is active (knexSnakeCaseMappers may return camelCase)
-    if (!(user.isActive ?? user.is_active)) {
+    // knexSnakeCaseMappers converts snake_case → camelCase — support both forms
+    const isActive        = user.isActive        ?? user.is_active;
+    const isEmailVerified = user.isEmailVerified  ?? user.is_email_verified;
+    const orgId           = user.orgId            ?? user.org_id;
+    const firstName       = user.firstName        ?? user.first_name;
+    const lastName        = user.lastName         ?? user.last_name;
+
+    // Check if user is active
+    if (!isActive) {
       return next(new ApiError(401, 'Account is deactivated, please contact support'));
     }
 
@@ -157,47 +164,47 @@ const loginUser = async (req, res, next) => {
     const token = generateToken(user.id);
     const refreshToken = generateRefreshToken(user.id);
 
-    // Update last login
-    await db('users')
-      .where({ id: user.id })
-      .update({
-        last_login: db.fn.now()
-      });
+    // Update last login (non-fatal)
+    await db('users').where({ id: user.id }).update({ last_login: db.fn.now() }).catch(() => {});
 
-    // Log event
+    // Log event (non-fatal)
     await db('system_logs').insert({
       user_id: user.id,
       action: 'user_login',
-      metadata: JSON.stringify({
-        user_email: user.email
-      }),
+      metadata: JSON.stringify({ user_email: user.email }),
       ip_address: req.ip,
       user_agent: req.headers['user-agent']
-    });
+    }).catch(() => {});
 
-    // Get organization details
-    const organization = await db('organizations')
-      .where({ id: user.org_id })
-      .select('id', 'name', 'email', 'logo_path', 'primary_color', 'secondary_color', 'sms_credits')
-      .first();
+    // Get organization details only if user belongs to one
+    let organization = null;
+    let subscription = null;
 
-    // Get subscription details
-    const subscription = await db('subscriptions')
-      .join('plans', 'subscriptions.plan_id', 'plans.id')
-      .where('subscriptions.org_id', user.org_id)
-      .where('subscriptions.status', 'active')
-      .select(
-        'plans.id as plan_id',
-        'plans.name as plan_name',
-        'plans.envelope_limit',
-        'plans.sms_credits',
-        'plans.custom_branding',
-        'plans.remove_watermark',
-        'plans.api_access',
-        'plans.priority_support',
-        'subscriptions.next_billing_date'
-      )
-      .first();
+    if (orgId) {
+      organization = await db('organizations')
+        .where({ id: orgId })
+        .select('id', 'name', 'email', 'logo_path', 'primary_color', 'secondary_color', 'sms_credits')
+        .first()
+        .catch(() => null);
+
+      subscription = await db('subscriptions')
+        .join('plans', 'subscriptions.plan_id', 'plans.id')
+        .where('subscriptions.org_id', orgId)
+        .where('subscriptions.status', 'active')
+        .select(
+          'plans.id as plan_id',
+          'plans.name as plan_name',
+          'plans.envelope_limit',
+          'plans.sms_credits',
+          'plans.custom_branding',
+          'plans.remove_watermark',
+          'plans.api_access',
+          'plans.priority_support',
+          'subscriptions.next_billing_date'
+        )
+        .first()
+        .catch(() => null);
+    }
 
     res.status(200).json({
       success: true,
@@ -206,10 +213,10 @@ const loginUser = async (req, res, next) => {
         user: {
           id: user.id,
           email: user.email,
-          first_name: user.first_name,
-          last_name: user.last_name,
+          first_name: firstName,
+          last_name: lastName,
           role: user.role,
-          is_email_verified: user.is_email_verified
+          is_email_verified: isEmailVerified
         },
         organization: organization || null,
         subscription: subscription || null,
