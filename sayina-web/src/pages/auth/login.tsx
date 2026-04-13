@@ -29,7 +29,7 @@ export default function Login() {
         throw new Error(data.message || 'Login failed. Please check your credentials.');
       }
 
-      localStorage.setItem('token', data.token);
+      localStorage.setItem('token', data.data?.token || data.token);
       if (data.data?.user?.role) localStorage.setItem('sayina_user_role', data.data.user.role);
       if (data.data?.user?.first_name) localStorage.setItem('sayina_user_name', `${data.data.user.first_name} ${data.data.user.last_name || ''}`.trim());
       if (data.data?.user?.email) localStorage.setItem('sayina_user_email', data.data.user.email);

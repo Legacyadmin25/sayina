@@ -39,8 +39,8 @@ const protect = async (req, res, next) => {
         return next(new ApiError(401, 'Not authorized, user not found'));
       }
 
-      // Check if user is active
-      if (!user.is_active) {
+      // Check if user is active (knexSnakeCaseMappers converts to camelCase — support both)
+      if (!(user.isActive ?? user.is_active)) {
         return next(new ApiError(401, 'Account is deactivated, please contact support'));
       }
 
@@ -81,7 +81,9 @@ const orgAdmin = (req, res, next) => {
  * Verify email middleware
  */
 const verifiedEmail = (req, res, next) => {
-  if (req.user && req.user.is_email_verified) {
+  // knexSnakeCaseMappers converts snake_case → camelCase — support both forms
+  const isVerified = req.user && (req.user.isEmailVerified ?? req.user.is_email_verified);
+  if (isVerified) {
     next();
   } else {
     next(new ApiError(403, 'Email not verified, please verify your email first'));
