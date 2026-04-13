@@ -16,15 +16,20 @@ export interface Signer {
   role: SignerRole;
 }
 
+export type FieldType = 'signature' | 'initials' | 'text' | 'date' | 'checkbox' | 'dropdown' | 'stamp';
+
 export interface Field {
   id: string;
-  type: 'signature' | 'text' | 'date' | 'checkbox';
+  type: FieldType;
   x: number;
   y: number;
   width: number;
   height: number;
   page: number;
   signerId: number;
+  label?: string;       // optional label shown above the field
+  required?: boolean;   // defaults to true
+  options?: string[];   // for dropdown type
 }
 
 export interface EnvelopeData {

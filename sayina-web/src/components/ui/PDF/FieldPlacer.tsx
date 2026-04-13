@@ -1,15 +1,37 @@
 'use client';
 import { useState, useRef } from 'react';
 import Draggable from 'react-draggable';
-import { Field } from '@/lib/types/envelope';
+import { Field, FieldType } from '@/lib/types/envelope';
 import { cn } from '@/lib/utils';
+
+// Default sizes per field type
+const FIELD_DEFAULTS: Record<FieldType, { width: number; height: number; label: string }> = {
+  signature: { width: 160, height: 56,  label: 'Signature' },
+  initials:  { width: 80,  height: 48,  label: 'Initials'  },
+  text:      { width: 160, height: 32,  label: 'Text'      },
+  date:      { width: 120, height: 32,  label: 'Date'      },
+  checkbox:  { width: 24,  height: 24,  label: 'Checkbox'  },
+  dropdown:  { width: 160, height: 32,  label: 'Dropdown'  },
+  stamp:     { width: 80,  height: 80,  label: 'Stamp'     },
+};
+
+// Colours per field type (tailwind-compatible inline styles)
+const FIELD_COLOURS: Record<FieldType, string> = {
+  signature: '#3B82F6',   // blue
+  initials:  '#8B5CF6',   // purple
+  text:      '#6B7280',   // gray
+  date:      '#10B981',   // green
+  checkbox:  '#F59E0B',   // amber
+  dropdown:  '#EC4899',   // pink
+  stamp:     '#EF4444',   // red
+};
 
 interface FieldPlacerProps {
   fields: Field[];
   onChange: (fields: Field[]) => void;
   currentPage: number;
   scale: number;
-  activeTool: 'signature' | 'text' | 'date' | 'checkbox';
+  activeTool: FieldType;
   activeSignerId: number;
   isPlacing: boolean;
   setIsPlacing: (isPlacing: boolean) => void;
@@ -64,15 +86,19 @@ export default function FieldPlacer({
     const y = (e.clientY - containerRect.top) / scale;
     
     // Create new field
+    const defaults = FIELD_DEFAULTS[activeTool];
     const newField: Field = {
       id: `field-${activeTool}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       type: activeTool,
       x,
       y,
-      width: activeTool === 'signature' ? 150 : 100,
-      height: activeTool === 'signature' ? 50 : 30,
+      width: defaults.width,
+      height: defaults.height,
       page: currentPage,
       signerId: activeSignerId,
+      label: defaults.label,
+      required: true,
+      options: activeTool === 'dropdown' ? ['Option 1', 'Option 2', 'Option 3'] : undefined,
     };
     
     // Update fields
@@ -146,28 +172,35 @@ export default function FieldPlacer({
           >
             <div
               className={cn(
-                'absolute border-2 flex items-center justify-center select-none cursor-move',
-                fieldBeingResized === field.id ? 'border-primary-500 z-10' : 'border-dashed border-secondary-400',
-                'hover:border-primary-500'
+                'absolute border-2 flex flex-col items-center justify-center select-none cursor-move rounded overflow-hidden',
+                fieldBeingResized === field.id ? 'z-20' : '',
               )}
               style={{
                 width: field.width * scale,
                 height: field.height * scale,
+                borderColor: FIELD_COLOURS[field.type],
+                backgroundColor: FIELD_COLOURS[field.type] + '18', // 10% opacity tint
+                borderStyle: 'dashed',
               }}
             >
-              <div className="text-xs text-secondary-500 uppercase font-light">
-                {field.type}
+              {/* Label */}
+              <div
+                className="text-xs font-semibold uppercase tracking-wide truncate px-1"
+                style={{ color: FIELD_COLOURS[field.type], fontSize: `${Math.max(8, 11 * scale)}px` }}
+              >
+                {field.label || field.type}
               </div>
-              
+
               {/* Resize handle */}
-              <div 
-                className="absolute bottom-0 right-0 w-3 h-3 bg-primary-500 cursor-se-resize"
+              <div
+                className="absolute bottom-0 right-0 w-3 h-3 cursor-se-resize rounded-tl"
+                style={{ backgroundColor: FIELD_COLOURS[field.type] }}
                 onMouseDown={(e) => handleResizeStart(e, field.id)}
               />
-              
+
               {/* Delete button */}
               <div
-                className="absolute -top-2 -right-2 bg-white rounded-full p-1 border border-secondary-300 cursor-pointer"
+                className="absolute -top-2 -right-2 bg-white rounded-full p-0.5 border border-secondary-300 cursor-pointer shadow-sm z-10"
                 onClick={(e) => removeField(e, field.id)}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-secondary-600" viewBox="0 0 20 20" fill="currentColor">

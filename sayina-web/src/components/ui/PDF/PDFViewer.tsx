@@ -1,9 +1,22 @@
 'use client';
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { toast } from 'react-hot-toast';
 import axios from 'axios';
-import DocumentViewer from './DocumentViewer';
 import FieldPlacer from './FieldPlacer';
+
+// react-pdf uses browser-only APIs — must be loaded client-side only (no SSR)
+const DocumentViewer = dynamic(() => import('./DocumentViewer'), { ssr: false, loading: () => (
+  <div className="flex-1 flex items-center justify-center bg-secondary-50">
+    <div className="flex items-center gap-2 text-secondary-400 text-sm">
+      <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+      </svg>
+      Loading document…
+    </div>
+  </div>
+)});
 import FieldInteractor, { SignatureData } from './FieldInteractor';
 import { Field } from '@/lib/types/envelope';
 import { Button } from '@/components/ui/Button';
@@ -37,7 +50,7 @@ export default function PDFViewer({
   const [numPages, setNumPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [scale, setScale] = useState(1.0);
-  const [activeTool, setActiveTool] = useState<'signature' | 'text' | 'date' | 'checkbox'>('signature');
+  const [activeTool, setActiveTool] = useState<import('@/lib/types/envelope').FieldType>('signature');
   const [isPlacing, setIsPlacing] = useState(false);
   const [activeSignerId, setActiveSignerId] = useState(signerId);
   const [isTranslating, setIsTranslating] = useState(false);
@@ -278,50 +291,29 @@ export default function PDFViewer({
         </div>
 
         {mode === 'builder' && (
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant={activeTool === 'signature' ? 'default' : 'secondary'}
-              size="sm"
-              onClick={() => handleToolSelect('signature')}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-              </svg>
-              Signature
-            </Button>
-            
-            <Button
-              variant={activeTool === 'text' ? 'default' : 'secondary'}
-              size="sm"
-              onClick={() => handleToolSelect('text')}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-              </svg>
-              Text
-            </Button>
-            
-            <Button
-              variant={activeTool === 'date' ? 'default' : 'secondary'}
-              size="sm"
-              onClick={() => handleToolSelect('date')}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-              </svg>
-              Date
-            </Button>
-            
-            <Button
-              variant={activeTool === 'checkbox' ? 'default' : 'secondary'}
-              size="sm"
-              onClick={() => handleToolSelect('checkbox')}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              Checkbox
-            </Button>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {([
+              { key: 'signature', label: 'Signature', icon: '✍️' },
+              { key: 'initials',  label: 'Initials',  icon: '🔤' },
+              { key: 'text',      label: 'Text',      icon: '𝐓' },
+              { key: 'date',      label: 'Date',      icon: '📅' },
+              { key: 'checkbox',  label: 'Checkbox',  icon: '☑️' },
+              { key: 'dropdown',  label: 'Dropdown',  icon: '▾' },
+              { key: 'stamp',     label: 'Stamp',     icon: '🔴' },
+            ] as { key: import('@/lib/types/envelope').FieldType; label: string; icon: string }[]).map(({ key, label, icon }) => (
+              <button
+                key={key}
+                onClick={() => handleToolSelect(key)}
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded text-xs font-medium border transition-colors ${
+                  activeTool === key
+                    ? 'bg-primary-500 text-white border-primary-500'
+                    : 'bg-white text-secondary-700 border-secondary-200 hover:bg-secondary-50'
+                }`}
+              >
+                <span>{icon}</span>
+                <span>{label}</span>
+              </button>
+            ))}
           </div>
         )}
       </div>
