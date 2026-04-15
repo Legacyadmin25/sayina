@@ -165,7 +165,10 @@ export default function CreateEnvelope() {
                 // Send
                 await sendEnvelope(id);
 
-                setEnvelope(prev => ({ ...prev, isLoading: false }));
+                // Navigate away on success — don't clear isLoading first,
+                // because setting isLoading: false remounts Step4Review as a
+                // fresh component, which swallows the success state.
+                router.push('/envelopes');
                 return true;
               } catch (error) {
                 setEnvelope(prev => ({
