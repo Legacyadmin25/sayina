@@ -149,21 +149,26 @@ export default function CreateEnvelope() {
               try {
                 setEnvelope(prev => ({ ...prev, isLoading: true, error: null }));
 
-                // Create envelope with PDF
-                const { id } = await createEnvelope(envelope.file);
+                // 1. Create envelope metadata + upload PDF
+                const { envelopeId, documentId } = await createEnvelope(envelope.file);
 
-                // Add signers
+                // 2. Add signers — get back backend UUIDs in order
+                let signerUUIDs: string[] = [];
                 if (envelope.signers.length > 0) {
-                  await addSignersToEnvelope(id, envelope.signers);
+                  const backendSigners = await addSignersToEnvelope(envelopeId, envelope.signers);
+                  // Sort by order (1-based) and extract IDs into a 0-based array
+                  signerUUIDs = backendSigners
+                    .sort((a, b) => a.order - b.order)
+                    .map(s => s.id);
                 }
 
-                // Add fields
+                // 3. Add fields — each field references document + signer UUIDs
                 if (envelope.fields.length > 0) {
-                  await addFieldsToEnvelope(id, envelope.fields);
+                  await addFieldsToEnvelope(envelopeId, documentId, envelope.fields, signerUUIDs);
                 }
 
-                // Send
-                await sendEnvelope(id);
+                // 4. Send
+                await sendEnvelope(envelopeId);
 
                 // Navigate away on success — don't clear isLoading first,
                 // because setting isLoading: false remounts Step4Review as a

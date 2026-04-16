@@ -65,43 +65,84 @@ export async function apiRequest<T>(
 
 // Envelope API endpoints
 
-// Create a new envelope with PDF upload
-export async function createEnvelope(file: File): Promise<{ id: string }> {
-  const formData = new FormData();
-  formData.append('file', file);
-  
-  return apiRequest<{ id: string }>('/envelopes', {
-    method: 'POST',
-    body: formData,
-  });
+// Step 1a: Create envelope metadata (no file)
+async function createEnvelopeRecord(name: string): Promise<string> {
+  const res = await apiRequest<{ success: boolean; data: { envelope: { id: string } } }>(
+    '/envelopes',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    }
+  );
+  return res.data.envelope.id;
 }
 
-// Add signers to an envelope
+// Step 1b: Upload PDF to envelope — returns the document ID
+async function uploadDocument(envelopeId: string, file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append('document', file); // backend multer expects field name "document"
+
+  const res = await apiRequest<{ success: boolean; data: { document: { id: string } } }>(
+    `/documents/upload/${envelopeId}`,
+    { method: 'POST', body: formData }
+  );
+  return res.data.document.id;
+}
+
+// Combined helper used by the wizard: creates envelope + uploads PDF
+// Returns { envelopeId, documentId }
+export async function createEnvelope(
+  file: File
+): Promise<{ envelopeId: string; documentId: string }> {
+  const envelopeId = await createEnvelopeRecord(file.name);
+  const documentId = await uploadDocument(envelopeId, file);
+  return { envelopeId, documentId };
+}
+
+// Add signers to an envelope — returns backend signer records (with UUIDs)
 export async function addSignersToEnvelope(
   envelopeId: string,
   signers: Signer[]
-): Promise<void> {
-  return apiRequest<void>(`/envelopes/${envelopeId}/signers`, {
+): Promise<Array<{ id: string; order: number }>> {
+  const res = await apiRequest<{
+    success: boolean;
+    data: { signers: Array<{ id: string; order: number }> };
+  }>(`/envelopes/${envelopeId}/signers`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ signers }),
   });
+  return res.data.signers;
 }
 
-// Add fields to an envelope
+// Add fields — each field is posted individually.
+// signerUUIDs maps local signer index → backend UUID.
 export async function addFieldsToEnvelope(
   envelopeId: string,
-  fields: Field[]
+  documentId: string,
+  fields: Field[],
+  signerUUIDs: string[] // index 0 → UUID of first signer, etc.
 ): Promise<void> {
-  return apiRequest<void>(`/envelopes/${envelopeId}/fields`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ fields }),
-  });
+  for (const field of fields) {
+    await apiRequest<unknown>('/fields', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        envelope_id: envelopeId,
+        document_id: documentId,
+        signer_id:   signerUUIDs[field.signerId] ?? null,
+        type:        field.type,
+        page:        field.page,
+        x_position:  field.x,
+        y_position:  field.y,
+        width:       field.width,
+        height:      field.height,
+        required:    field.required ?? true,
+        label:       field.label ?? '',
+      }),
+    });
+  }
 }
 
 // Send an envelope to signers
