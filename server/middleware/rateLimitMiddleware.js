@@ -1,29 +1,26 @@
 const rateLimit = require('express-rate-limit');
-const RedisStore = require('rate-limit-redis');
-const Redis = require('ioredis');
 const { ApiError } = require('./errorMiddleware');
 const { logSecurityEvent } = require('../services/loggerService');
 
-// Create Redis client if Redis URL is provided
-let redisClient;
-if (process.env.REDIS_URL) {
-  redisClient = new Redis(process.env.REDIS_URL);
-}
-
 /**
  * Configure store based on environment
+ * Uses Redis store if available, otherwise falls back to in-memory store
  */
 const configureStore = () => {
-  // Use Redis store if Redis client is available
-  if (redisClient) {
-    return new RedisStore({
-      // @ts-expect-error - Known issue with @types/rate-limit-redis
-      sendCommand: (...args) => redisClient.call(...args),
-      prefix: 'rl:sayina:'
-    });
+  if (process.env.REDIS_URL) {
+    try {
+      const RedisStore = require('rate-limit-redis').default || require('rate-limit-redis');
+      const Redis = require('ioredis');
+      const redisClient = new Redis(process.env.REDIS_URL);
+      return new RedisStore({
+        sendCommand: (...args) => redisClient.call(...args),
+        prefix: 'rl:sayina:'
+      });
+    } catch (err) {
+      console.warn('Redis rate-limit store unavailable, using memory store:', err.message);
+      return undefined;
+    }
   }
-  
-  // Otherwise use memory store (default)
   return undefined;
 };
 
