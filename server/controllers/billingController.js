@@ -84,13 +84,13 @@ const getSubscription = async (req, res, next) => {
     }
 
     // Get usage statistics
-    const billingStartDate = new Date(subscription.next_billing_date);
+    const billingStartDate = new Date(subscription.nextBillingDate ?? subscription.next_billing_date ?? Date.now());
     billingStartDate.setMonth(billingStartDate.getMonth() - 1);
 
     // Get envelope count for current billing period
     const envelopeCount = await db('envelopes')
       .where('org_id', orgId)
-      .where('created_at', '>=', billingStartDate)
+      .where('created_at', '>=', billingStartDate.toISOString())
       .count('id as count')
       .first();
 
