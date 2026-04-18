@@ -44,6 +44,9 @@ const protect = async (req, res, next) => {
         return next(new ApiError(401, 'Account is deactivated, please contact support'));
       }
 
+      // Normalize org_id (knexSnakeCaseMappers returns orgId, controllers expect org_id)
+      user.org_id = user.orgId ?? user.org_id;
+
       // Set user in request
       req.user = user;
       next();
