@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { createEnvelope, addSignersToEnvelope, addFieldsToEnvelope, sendEnvelope, getEnvelope } from '@/lib/api/api';
+import Link from 'next/link';
+import { submitWizard, getEnvelope } from '@/lib/api/api';
 import { EnvelopeState, Signer, Field } from '@/lib/types/envelope';
 
 import Step1Upload from '@/components/envelopes/steps/Step1Upload';
@@ -53,7 +54,23 @@ export default function CreateEnvelope() {
   const steps = ['Upload', 'Signers', 'Fields', 'Review'];
 
   return (
-    <div className="min-h-screen bg-secondary-50 py-8">
+    <div className="min-h-screen bg-secondary-50">
+      {/* Top nav bar */}
+      <div className="bg-white border-b border-secondary-200 px-4 py-3 flex items-center justify-between">
+        <Link
+          href="/envelopes"
+          className="flex items-center gap-2 text-sm text-secondary-500 hover:text-secondary-800 transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+          </svg>
+          Back to Envelopes
+        </Link>
+        <span className="text-sm font-semibold text-secondary-700">New Envelope</span>
+        <div className="w-32" />
+      </div>
+
+      <div className="py-8">
       <div className={`mx-auto px-4 ${step === 3 ? 'max-w-6xl' : 'max-w-3xl'}`}>
         {/* Progress bar */}
         <div className="mb-8">
@@ -144,45 +161,13 @@ export default function CreateEnvelope() {
             data={envelope}
             onBack={() => setStep(3)}
             onSubmit={async () => {
-              if (!envelope.file) return false;
-
-              try {
-                setEnvelope(prev => ({ ...prev, isLoading: true, error: null }));
-
-                // 1. Create envelope metadata + upload PDF
-                const { envelopeId, documentId } = await createEnvelope(envelope.file);
-
-                // 2. Add signers — get back backend UUIDs in order
-                let signerUUIDs: string[] = [];
-                if (envelope.signers.length > 0) {
-                  const backendSigners = await addSignersToEnvelope(envelopeId, envelope.signers);
-                  // Sort by order (1-based) and extract IDs into a 0-based array
-                  signerUUIDs = backendSigners
-                    .sort((a, b) => a.order - b.order)
-                    .map(s => s.id);
-                }
-
-                // 3. Add fields — each field references document + signer UUIDs
-                if (envelope.fields.length > 0) {
-                  await addFieldsToEnvelope(envelopeId, documentId, envelope.fields, signerUUIDs);
-                }
-
-                // 4. Send
-                await sendEnvelope(envelopeId);
-
-                // Navigate away on success — don't clear isLoading first,
-                // because setting isLoading: false remounts Step4Review as a
-                // fresh component, which swallows the success state.
-                router.push('/envelopes');
-                return true;
-              } catch (error) {
-                setEnvelope(prev => ({
-                  ...prev,
-                  isLoading: false,
-                  error: error instanceof Error ? error.message : 'Failed to send envelope',
-                }));
-                return false;
+              const file = envelope.file;
+              if (!file) {
+                throw new Error('No document uploaded. Please go back to Step 1.');
               }
+              // submitWizard: one call — creates envelope, uploads doc, adds signers+fields, sends emails.
+              // Throws on error so Step4Review can catch it and show the alert.
+              await submitWizard(file, envelope.signers, envelope.fields);
             }}
           />
         )}
@@ -205,6 +190,7 @@ export default function CreateEnvelope() {
             </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

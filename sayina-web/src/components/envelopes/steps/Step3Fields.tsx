@@ -1,4 +1,3 @@
-'use client';
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { detectFields } from '@/lib/api/api';
@@ -79,7 +78,7 @@ export default function Step3Fields({ data, onBack, onNext }: Step3Props) {
 
   const handleFieldsChange = (updatedFields: Field[]) => {
     setFields(updatedFields);
-    toast.success('Fields updated');
+    // No toast here — fires on every drag/resize and is too noisy
   };
   
   const handleContinue = () => {

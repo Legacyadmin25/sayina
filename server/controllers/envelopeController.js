@@ -3,6 +3,12 @@ const { v4: uuidv4 } = require('uuid');
 const { db } = require('../config/db');
 const { ApiError } = require('../middleware/errorMiddleware');
 const { redisClient } = require('../config/redis');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
+const { PDFDocument } = require('pdf-lib');
+const axios = require('axios');
 
 /**
  * @desc    Create a new envelope
@@ -843,6 +849,356 @@ const getEnvelopeStatus = async (req, res, next) => {
   }
 };
 
+/**
+ * @desc    One-shot wizard: create envelope + upload doc + add signers + add fields + send
+ * @route   POST /api/v1/envelopes/wizard
+ * @access  Private
+ */
+const submitWizard = (req, res, next) => {
+  // ── Multer setup (inline, same pattern as documentController) ───────────────
+  const ACCEPTED = [
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'image/jpeg',
+    'image/png',
+  ];
+
+  const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      const dir = path.join(__dirname, '../../uploads/documents');
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      cb(null, dir);
+    },
+    filename: (req, file, cb) => {
+      const suffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+      cb(null, `wizard-${suffix}${path.extname(file.originalname)}`);
+    },
+  });
+
+  const upload = multer({
+    storage,
+    limits: { fileSize: 20 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+      if (ACCEPTED.includes(file.mimetype)) cb(null, true);
+      else cb(new Error('Unsupported file type. Please upload a PDF, Word document, or image.'));
+    },
+  }).single('file');
+
+  upload(req, res, async (uploadErr) => {
+    if (uploadErr) return next(new ApiError(400, uploadErr.message));
+    if (!req.file) return next(new ApiError(400, 'No file uploaded'));
+
+    try {
+      const userId = req.user.id;
+      const orgId  = req.user.orgId ?? req.user.org_id;
+
+      // ── Parse signers / fields from FormData JSON strings ─────────────────
+      let signers = [], fields = [];
+      try {
+        signers = JSON.parse(req.body.signers || '[]');
+        fields  = JSON.parse(req.body.fields  || '[]');
+      } catch {
+        return next(new ApiError(400, 'Invalid signers or fields JSON'));
+      }
+
+      // ── Subscription limit check ───────────────────────────────────────────
+      const orgData = await db('organizations')
+        .join('subscriptions', 'organizations.id', 'subscriptions.org_id')
+        .join('plans', 'subscriptions.plan_id', 'plans.id')
+        .where('organizations.id', orgId)
+        .select('plans.envelope_limit')
+        .first();
+
+      if (!orgData) throw new ApiError(404, 'Organization or subscription not found');
+
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+      const { count: envCount } = await db('envelopes')
+        .where('org_id', orgId)
+        .where('created_at', '>=', startOfMonth)
+        .count('id as count')
+        .first();
+      const envelopeLimit = orgData.envelopeLimit ?? orgData.envelope_limit;
+      if (parseInt(envCount) >= envelopeLimit) {
+        throw new ApiError(403, 'Monthly envelope limit reached for your subscription tier');
+      }
+
+      // ── Process uploaded file (convert images / Word to PDF) ──────────────
+      let filePath = req.file.path;
+      const origMime = req.file.mimetype;
+      const origName = req.file.originalname;
+      let fileType = 'application/pdf';
+      let fileName = origName.replace(/\.(docx?|jpe?g|png)$/i, '.pdf');
+
+      if (origMime === 'image/jpeg' || origMime === 'image/png') {
+        const imgBuf = fs.readFileSync(filePath);
+        const pdfDoc = await PDFDocument.create();
+        const img = origMime === 'image/jpeg'
+          ? await pdfDoc.embedJpg(imgBuf)
+          : await pdfDoc.embedPng(imgBuf);
+        const pg = pdfDoc.addPage([img.width, img.height]);
+        pg.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
+        const pdfBytes = await pdfDoc.save();
+        const pdfPath = filePath.replace(/\.(jpe?g|png)$/i, '.pdf');
+        fs.writeFileSync(pdfPath, pdfBytes);
+        fs.unlinkSync(filePath);
+        filePath = pdfPath;
+      } else if (
+        origMime === 'application/msword' ||
+        origMime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      ) {
+        try {
+          const { execSync } = require('child_process');
+          execSync(`libreoffice --headless --convert-to pdf --outdir "${path.dirname(filePath)}" "${filePath}"`, { timeout: 30000 });
+          const pdfPath = filePath.replace(/\.docx?$/i, '.pdf');
+          if (fs.existsSync(pdfPath)) {
+            fs.unlinkSync(filePath);
+            filePath = pdfPath;
+          } else {
+            fileType = origMime;
+            fileName = origName;
+          }
+        } catch {
+          fileType = origMime;
+          fileName = origName;
+        }
+      } else {
+        fileName = origName;
+      }
+
+      const fileBuf  = fs.readFileSync(filePath);
+      const fileSize = fileBuf.length;
+      const hash     = crypto.createHash('sha256').update(fileBuf).digest('hex');
+      let pageCount  = 1;
+      if (fileType === 'application/pdf') {
+        try { const pd = await PDFDocument.load(fileBuf); pageCount = pd.getPageCount(); } catch {}
+      }
+
+      // ── Create envelope ────────────────────────────────────────────────────
+      const envelopeId = uuidv4();
+      await db('envelopes').insert({
+        id:          envelopeId,
+        name:        origName,
+        status:      'draft',
+        org_id:      orgId,
+        created_by:  userId,
+        expiry_days: 30,
+      });
+
+      // ── Save document ──────────────────────────────────────────────────────
+      const documentId = uuidv4();
+      await db('documents').insert({
+        id:          documentId,
+        envelope_id: envelopeId,
+        name:        fileName,
+        file_path:   filePath,
+        file_type:   fileType,
+        file_size:   fileSize,
+        sha256_hash: hash,
+        page_count:  pageCount,
+      });
+
+      // ── Insert signers, build wizard-index → DB-UUID map ──────────────────
+      // Map wizard field types to DB accepted values
+      const FIELD_TYPE_MAP = {
+        initials: 'initial',
+        stamp:    'text',   // no stamp type in DB — store as text
+      };
+
+      const signerMap = {}; // numeric wizard index → { id, email, name, phone, role }
+      for (let i = 0; i < signers.length; i++) {
+        const s = signers[i];
+        if (!s.email || !/\S+@\S+\.\S+/.test(s.email)) continue;
+        const parts      = (s.name || '').trim().split(/\s+/);
+        const first_name = parts[0] || 'Unknown';
+        const last_name  = parts.slice(1).join(' ') || '';
+        const dbId       = uuidv4();
+        const role       = ['signer', 'approver', 'cc', 'viewer'].includes(s.role) ? s.role : 'signer';
+        await db('signers').insert({
+          id:          dbId,
+          envelope_id: envelopeId,
+          email:       s.email.trim().toLowerCase(),
+          first_name,
+          last_name,
+          phone:  s.phone || null,
+          role,
+          order:  i + 1,
+          status: 'pending',
+        });
+        signerMap[i] = {
+          id:    dbId,
+          email: s.email,
+          name:  `${first_name} ${last_name}`.trim(),
+          phone: s.phone,
+          role,
+        };
+      }
+
+      // ── Insert fields ──────────────────────────────────────────────────────
+      for (const field of fields) {
+        const signer = signerMap[field.signerId];
+        if (!signer) continue;
+        const dbType = FIELD_TYPE_MAP[field.type] || field.type;
+        try {
+          await db('fields').insert({
+            id:           uuidv4(),
+            document_id:  documentId,
+            envelope_id:  envelopeId,
+            signer_id:    signer.id,
+            type:         dbType,
+            page:         field.page || 1,
+            x_position:   field.x,
+            y_position:   field.y,
+            width:        field.width,
+            height:       field.height,
+            label:        field.label || null,
+            required:     field.required !== false,
+            created_by:   userId,
+          });
+        } catch (fieldErr) {
+          console.error('Error inserting field:', fieldErr.message);
+          // Non-fatal — continue with other fields
+        }
+      }
+
+      // ── Notify CC / viewer recipients (no signing link) ───────────────────
+      for (const signer of Object.values(signerMap)) {
+        if (signer.role !== 'cc' && signer.role !== 'viewer') continue;
+        try {
+          if (process.env.RESEND_API_KEY) {
+            await axios.post(
+              'https://api.resend.com/emails',
+              {
+                from:    process.env.EMAIL_FROM || 'Sayina <onboarding@resend.dev>',
+                to:      signer.email,
+                subject: `You have been CC'd on: "${origName}"`,
+                html: `
+                  <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+                    <h2 style="color:#1e3a5f;">Document Notification</h2>
+                    <p>Hi ${signer.name},</p>
+                    <p>You have been copied on a document that has been sent for signing: <strong>${origName}</strong></p>
+                    <p style="color:#666;font-size:13px;">You will receive a copy once all parties have signed.</p>
+                    <hr style="border:none;border-top:1px solid #eee;margin:24px 0;">
+                    <p style="color:#999;font-size:12px;">Sayina E-Signature Platform</p>
+                  </div>`,
+              },
+              { headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' } }
+            );
+          }
+        } catch (ccEmailErr) {
+          console.error(`CC email failed for ${signer.email}:`, ccEmailErr.message);
+        }
+      }
+
+      // ── Generate signing tokens + send emails ──────────────────────────────
+      const signingUrls = [];
+      for (const signer of Object.values(signerMap)) {
+        if (signer.role === 'cc' || signer.role === 'viewer') continue;
+
+        const accessToken = uuidv4();
+
+        // Store token in Redis (best-effort)
+        try {
+          await redisClient.set(
+            `signing_token:${accessToken}`,
+            JSON.stringify({ envelope_id: envelopeId, signer_id: signer.id }),
+            'EX',
+            30 * 24 * 60 * 60
+          );
+        } catch (redisErr) {
+          console.error('Redis signing token error:', redisErr.message);
+        }
+
+        const signingUrl = `${process.env.CLIENT_URL || 'http://localhost:3000'}/sign/${accessToken}`;
+        signingUrls.push({
+          signer_id:    signer.id,
+          signer_email: signer.email,
+          signer_name:  signer.name,
+          signing_url:  signingUrl,
+        });
+
+        // Send invitation email (best-effort — never fails the whole request)
+        try {
+          if (process.env.RESEND_API_KEY) {
+            await axios.post(
+              'https://api.resend.com/emails',
+              {
+                from:    process.env.EMAIL_FROM || 'Sayina <onboarding@resend.dev>',
+                to:      signer.email,
+                subject: `Please sign: "${origName}"`,
+                html: `
+                  <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+                    <h2 style="color:#1e3a5f;">Document Signature Request</h2>
+                    <p>Hi ${signer.name},</p>
+                    <p>You have been invited to review and sign the document: <strong>${origName}</strong></p>
+                    <p style="margin:24px 0;">
+                      <a href="${signingUrl}"
+                         style="background:#3b82f6;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;font-weight:bold;display:inline-block;">
+                        Sign Document
+                      </a>
+                    </p>
+                    <p style="color:#666;font-size:13px;">Or copy this link into your browser:<br>${signingUrl}</p>
+                    <p style="color:#666;font-size:13px;">This link expires in 30 days.</p>
+                    <hr style="border:none;border-top:1px solid #eee;margin:24px 0;">
+                    <p style="color:#999;font-size:12px;">Sayina E-Signature Platform</p>
+                  </div>`,
+              },
+              { headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' } }
+            );
+          } else {
+            // Fall back to existing SMTP email service
+            const { sendSigningInvitation } = require('../services/emailService');
+            await sendSigningInvitation(signer.email, signer.name, {
+              envelope_name: origName,
+              signing_url:   signingUrl,
+              organization_name: 'Sayina',
+            });
+          }
+        } catch (emailErr) {
+          console.error(`Email failed for ${signer.email}:`, emailErr.message);
+        }
+      }
+
+      // ── Update envelope status to 'sent' ────────────────────────────────────
+      await db('envelopes').where({ id: envelopeId }).update({
+        status:     'sent',
+        sent_at:    db.fn.now(),
+        updated_at: db.fn.now(),
+      });
+
+      // Mark first active signer as 'current'
+      const firstActive = Object.values(signerMap).find(s => s.role !== 'cc' && s.role !== 'viewer');
+      if (firstActive) {
+        await db('signers').where({ id: firstActive.id }).update({ status: 'current', updated_at: db.fn.now() });
+      }
+
+      // Log event
+      await db('events').insert({
+        envelope_id: envelopeId,
+        user_id:     userId,
+        action:      'envelope_sent',
+        metadata:    JSON.stringify({ signer_count: signers.length, source: 'wizard' }),
+        ip_address:  req.ip,
+        user_agent:  req.headers['user-agent'],
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Envelope created and sent successfully',
+        data: { envelopeId, signingUrls },
+      });
+    } catch (error) {
+      // Clean up uploaded file on any error
+      try {
+        if (req.file && req.file.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+      } catch {}
+      next(error);
+    }
+  });
+};
+
 module.exports = {
   createEnvelope,
   getEnvelopes,
@@ -853,5 +1209,6 @@ module.exports = {
   removeSigner,
   sendEnvelope,
   cancelEnvelope,
-  getEnvelopeStatus
+  getEnvelopeStatus,
+  submitWizard,
 };

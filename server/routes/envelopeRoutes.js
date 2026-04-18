@@ -11,6 +11,14 @@ router.use(protect);
 router.use(verifiedEmail);
 
 /**
+ * @route   POST /api/v1/envelopes/wizard
+ * @desc    One-shot: create envelope + upload doc + add signers + fields + send
+ * @access  Private
+ * NOTE: Must be declared BEFORE /:id routes so "wizard" isn't treated as a UUID param.
+ */
+router.post('/wizard', envelopeController.submitWizard);
+
+/**
  * @route   POST /api/v1/envelopes
  * @desc    Create a new envelope
  * @access  Private

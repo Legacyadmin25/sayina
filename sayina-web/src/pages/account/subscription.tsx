@@ -8,7 +8,7 @@ const plans = [
     price: 'R150',
     period: '/month',
     current: true,
-    features: ['5 envelopes/month', 'Unlimited signers', 'Email notifications', 'Basic audit trail', 'ECT & POPIA compliant'],
+    features: ['5 envelopes/month', '5 SMS OTP credits/month', 'Unlimited signers', 'Email notifications', 'Basic audit trail', 'ECT & POPIA compliant'],
     cta: 'Current Plan',
   },
   {

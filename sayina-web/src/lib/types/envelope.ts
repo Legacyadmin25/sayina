@@ -64,5 +64,5 @@ export interface Step3Props {
 export interface Step4Props {
   data: EnvelopeData;
   onBack: () => void;
-  onSubmit: () => Promise<boolean>;
+  onSubmit: () => Promise<void>;
 }

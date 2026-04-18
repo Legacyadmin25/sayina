@@ -36,13 +36,21 @@ const applyPromoCode = async (req, res, next) => {
 
     if (!promo) throw new ApiError(404, 'Invalid or expired promo code');
 
+    // knexSnakeCaseMappers returns camelCase keys — use them consistently
+    const durationDays = promo.durationDays ?? promo.duration_days;
+    const maxUses      = promo.maxUses      ?? promo.max_uses;
+    const usedCount    = promo.usedCount    ?? promo.used_count;
+    const expiresAt    = promo.expiresAt    ?? promo.expires_at;
+    const planId       = promo.planId       ?? promo.plan_id;
+    const planName     = promo.planName     ?? promo.plan_name;
+
     // Check code hasn't expired
-    if (promo.expires_at && new Date(promo.expires_at) < new Date()) {
+    if (expiresAt && new Date(expiresAt) < new Date()) {
       throw new ApiError(400, 'This promo code has expired');
     }
 
     // Check max uses
-    if (promo.max_uses !== null && promo.used_count >= promo.max_uses) {
+    if (maxUses !== null && usedCount >= maxUses) {
       throw new ApiError(400, 'This promo code has reached its usage limit');
     }
 
@@ -61,9 +69,13 @@ const applyPromoCode = async (req, res, next) => {
       throw new ApiError(400, 'Your account already has an active paid subscription. Promo codes apply to new accounts only.');
     }
 
-    // Calculate end date
+    // Calculate end date from a valid integer
+    const days = parseInt(durationDays, 10);
+    if (!Number.isFinite(days) || days <= 0) {
+      throw new ApiError(500, 'Promo code has an invalid duration. Please contact support.');
+    }
     const endDate = new Date();
-    endDate.setDate(endDate.getDate() + promo.duration_days);
+    endDate.setDate(endDate.getDate() + days);
 
     await db.transaction(async (trx) => {
       // Deactivate any existing promo subscriptions for this org
@@ -76,12 +88,12 @@ const applyPromoCode = async (req, res, next) => {
         .insert({
           id: uuidv4(),
           org_id: orgId,
-          plan_id: promo.plan_id,
+          plan_id: planId,
           payfast_token: null,
           status: 'promo',
-          start_date: new Date(),
-          end_date: endDate,
-          next_billing_date: endDate,
+          start_date: new Date().toISOString(),
+          end_date: endDate.toISOString(),
+          next_billing_date: endDate.toISOString(),
         })
         .returning('*');
 
@@ -103,10 +115,10 @@ const applyPromoCode = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: `Promo code applied! You now have access to the ${promo.plan_name} plan for ${promo.duration_days} days.`,
+      message: `Promo code applied! You now have access to the ${planName} plan for ${days} days.`,
       data: {
-        plan_name: promo.plan_name,
-        duration_days: promo.duration_days,
+        plan_name: planName,
+        duration_days: days,
         end_date: endDate,
       },
     });
@@ -134,17 +146,24 @@ const validatePromoCode = async (req, res, next) => {
       .first();
 
     if (!promo) return res.json({ success: false, message: 'Invalid promo code' });
-    if (promo.expires_at && new Date(promo.expires_at) < new Date()) {
+
+    const expiresAt  = promo.expiresAt    ?? promo.expires_at;
+    const maxUses    = promo.maxUses      ?? promo.max_uses;
+    const usedCount  = promo.usedCount    ?? promo.used_count;
+    const planName   = promo.planName     ?? promo.plan_name;
+    const durationDays = promo.durationDays ?? promo.duration_days;
+
+    if (expiresAt && new Date(expiresAt) < new Date()) {
       return res.json({ success: false, message: 'This promo code has expired' });
     }
-    if (promo.max_uses !== null && promo.used_count >= promo.max_uses) {
+    if (maxUses !== null && usedCount >= maxUses) {
       return res.json({ success: false, message: 'This promo code has reached its limit' });
     }
 
     res.json({
       success: true,
-      message: `Valid! Grants ${promo.duration_days} days of ${promo.plan_name} plan for free.`,
-      data: { plan_name: promo.plan_name, duration_days: promo.duration_days },
+      message: `Valid! Grants ${durationDays} days of ${planName} plan for free.`,
+      data: { plan_name: planName, duration_days: durationDays },
     });
   } catch (error) {
     next(error);

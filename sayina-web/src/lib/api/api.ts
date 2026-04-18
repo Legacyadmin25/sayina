@@ -33,7 +33,7 @@ export async function apiRequest<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const token = getToken();
-  
+
   const headers = {
     ...(options.headers || {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -45,14 +45,14 @@ export async function apiRequest<T>(
   });
 
   if (!response.ok) {
-    // Try to get error message from response
+    let message = `API error: ${response.status}`;
     try {
       const errorData = await response.json();
-      throw new Error(errorData.message || `API error: ${response.status}`);
-    } catch (e) {
-      // If we can't parse the JSON, just throw with status
-      throw new Error(`API error: ${response.status}`);
+      if (errorData.message) message = errorData.message;
+    } catch (_) {
+      // keep default message if JSON can't be parsed
     }
+    throw new Error(message);
   }
 
   // Return empty object for 204 No Content
@@ -65,42 +65,39 @@ export async function apiRequest<T>(
 
 // Envelope API endpoints
 
-// Step 1a: Create envelope metadata (no file)
-async function createEnvelopeRecord(name: string): Promise<string> {
-  const res = await apiRequest<{ success: boolean; data: { envelope: { id: string } } }>(
-    '/envelopes',
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name }),
-    }
-  );
-  return res.data.envelope.id;
-}
-
-// Step 1b: Upload PDF to envelope — returns the document ID
-async function uploadDocument(envelopeId: string, file: File): Promise<string> {
+/**
+ * One-shot wizard: uploads file, adds signers & fields, sends envelope.
+ * Replaces the old 4-call chain (createEnvelope → addSigners → addFields → sendEnvelope).
+ */
+export async function submitWizard(
+  file: File,
+  signers: Signer[],
+  fields: Field[]
+): Promise<{ envelopeId: string }> {
   const formData = new FormData();
-  formData.append('document', file); // backend multer expects field name "document"
+  formData.append('file', file);
+  formData.append('signers', JSON.stringify(signers));
+  formData.append('fields', JSON.stringify(fields));
 
-  const res = await apiRequest<{ success: boolean; data: { document: { id: string } } }>(
-    `/documents/upload/${envelopeId}`,
+  const response = await apiRequest<{ success: boolean; data: { envelopeId: string } }>(
+    '/envelopes/wizard',
     { method: 'POST', body: formData }
   );
-  return res.data.document.id;
+  return response.data;
 }
 
-// Combined helper used by the wizard: creates envelope + uploads PDF
-// Returns { envelopeId, documentId }
-export async function createEnvelope(
-  file: File
-): Promise<{ envelopeId: string; documentId: string }> {
-  const envelopeId = await createEnvelopeRecord(file.name);
-  const documentId = await uploadDocument(envelopeId, file);
-  return { envelopeId, documentId };
+// Create a new envelope with PDF upload (legacy – kept for backwards compat)
+export async function createEnvelope(file: File): Promise<{ id: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  return apiRequest<{ id: string }>('/envelopes', {
+    method: 'POST',
+    body: formData,
+  });
 }
 
-// Add signers to an envelope — returns backend signer records (with UUIDs)
+// Add signers to an envelope (legacy)
 export async function addSignersToEnvelope(
   envelopeId: string,
   signers: Signer[]
@@ -116,36 +113,19 @@ export async function addSignersToEnvelope(
   return res.data.signers;
 }
 
-// Add fields — each field is posted individually.
-// signerUUIDs maps local signer index → backend UUID.
+// Add fields to an envelope (legacy)
 export async function addFieldsToEnvelope(
   envelopeId: string,
-  documentId: string,
-  fields: Field[],
-  signerUUIDs: string[] // index 0 → UUID of first signer, etc.
+  fields: Field[]
 ): Promise<void> {
-  for (const field of fields) {
-    await apiRequest<unknown>('/fields', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        envelope_id: envelopeId,
-        document_id: documentId,
-        signer_id:   signerUUIDs[field.signerId] ?? null,
-        type:        field.type,
-        page:        field.page,
-        x_position:  field.x,
-        y_position:  field.y,
-        width:       field.width,
-        height:      field.height,
-        required:    field.required ?? true,
-        label:       field.label ?? '',
-      }),
-    });
-  }
+  return apiRequest<void>(`/envelopes/${envelopeId}/fields`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fields }),
+  });
 }
 
-// Send an envelope to signers
+// Send an envelope to signers (legacy)
 export async function sendEnvelope(envelopeId: string): Promise<void> {
   return apiRequest<void>(`/envelopes/${envelopeId}/send`, {
     method: 'POST',
@@ -163,7 +143,7 @@ export async function getEnvelope(envelopeId: string): Promise<any> {
 export async function detectFields(file: File): Promise<Field[]> {
   const formData = new FormData();
   formData.append('file', file);
-  
+
   return apiRequest<Field[]>('/ai/fields', {
     method: 'POST',
     body: formData,
@@ -201,8 +181,8 @@ export async function verifyOTP(envelopeId: string, signerId: number, otpCode: s
 
 // Submit signed envelope with compliance data
 export async function signEnvelope(
-  envelopeId: string, 
-  signerId: number, 
+  envelopeId: string,
+  signerId: number,
   fields: SignedField[],
   complianceGiven: boolean = false,
   complianceAt: string = ''
@@ -212,13 +192,47 @@ export async function signEnvelope(
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ 
-      signerId, 
+    body: JSON.stringify({
+      signerId,
       fields,
       complianceGiven,
       complianceAt
     }),
   });
+}
+
+// Template API endpoints
+
+export interface Template {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string;
+  file_name: string;
+  file_size: number;
+  file_type: string;
+  is_public: boolean;
+  is_owner: boolean;
+  created_at: string;
+  created_by: { id: string; name: string; email: string } | null;
+}
+
+export async function getTemplates(): Promise<Template[]> {
+  const res = await apiRequest<{ data: Template[] }>('/templates', { method: 'GET' });
+  return res.data;
+}
+
+export async function createTemplate(file: File, name: string, description?: string): Promise<Template> {
+  const formData = new FormData();
+  formData.append('template', file);
+  formData.append('name', name);
+  if (description) formData.append('description', description);
+  const res = await apiRequest<{ data: Template }>('/templates', { method: 'POST', body: formData });
+  return res.data;
+}
+
+export async function deleteTemplate(templateId: string): Promise<void> {
+  return apiRequest<void>(`/templates/${templateId}`, { method: 'DELETE' });
 }
 
 // Check if organization requires watermark (free tier)

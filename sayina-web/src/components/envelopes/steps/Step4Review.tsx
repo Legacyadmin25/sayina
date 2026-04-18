@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/router';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
@@ -21,9 +22,11 @@ const PDFViewer = dynamic(() => import('@/components/ui/PDF/PDFViewer'), {
 // Using shared types from envelope.ts
 
 export default function Step4Review({ data, onBack, onSubmit }: Step4Props) {
+  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Get field count by type
   const fieldCounts = data.fields.reduce((acc, field) => {
@@ -40,16 +43,17 @@ export default function Step4Review({ data, onBack, onSubmit }: Step4Props) {
   // Handle submit
   const handleSubmit = async () => {
     setIsSubmitting(true);
-    
+    setSubmitError(null);
+
     try {
       await onSubmit();
+      setShowConfirmation(false);
       setShowSuccess(true);
     } catch (error) {
       console.error('Error sending envelope:', error);
-      alert('Error sending envelope. Please try again.');
+      setSubmitError(error instanceof Error ? error.message : 'Failed to send envelope. Please try again.');
     } finally {
       setIsSubmitting(false);
-      setShowConfirmation(false);
     }
   };
 
@@ -234,8 +238,13 @@ export default function Step4Review({ data, onBack, onSubmit }: Step4Props) {
             </div>
           </div>
         </div>
+        {submitError && (
+          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            {submitError}
+          </div>
+        )}
         <div className="flex justify-end gap-2 mt-4">
-          <Button variant="secondary" onClick={() => setShowConfirmation(false)}>
+          <Button variant="secondary" onClick={() => { setShowConfirmation(false); setSubmitError(null); }}>
             Cancel
           </Button>
           <Button onClick={handleSubmit} isLoading={isSubmitting}>
@@ -263,8 +272,8 @@ export default function Step4Review({ data, onBack, onSubmit }: Step4Props) {
           </p>
         </div>
         <div className="flex justify-center mt-4">
-          <Button onClick={() => window.location.href = '/dashboard'}>
-            Return to Dashboard
+          <Button onClick={() => router.push('/envelopes')}>
+            View My Envelopes
           </Button>
         </div>
       </Modal>

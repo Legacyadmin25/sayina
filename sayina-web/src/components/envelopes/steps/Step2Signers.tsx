@@ -1,10 +1,38 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Step2Props, Signer, SignerRole, SIGNER_ROLE_LABELS } from '@/lib/types/envelope';
 
-// Using shared types from envelope.ts
+const RECENT_CONTACTS_KEY = 'sayina_recent_contacts';
+const MAX_RECENT_CONTACTS = 20;
+
+interface SavedContact {
+  name: string;
+  email: string;
+  phone: string;
+}
+
+function loadRecentContacts(): SavedContact[] {
+  try {
+    const raw = localStorage.getItem(RECENT_CONTACTS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveContactToRecents(contact: SavedContact) {
+  try {
+    const contacts = loadRecentContacts();
+    // Remove duplicate email entries, add new one at top
+    const filtered = contacts.filter(c => c.email.toLowerCase() !== contact.email.toLowerCase());
+    const updated = [contact, ...filtered].slice(0, MAX_RECENT_CONTACTS);
+    localStorage.setItem(RECENT_CONTACTS_KEY, JSON.stringify(updated));
+  } catch {
+    // localStorage unavailable — silently ignore
+  }
+}
 
 const ROLE_ICONS: Record<SignerRole, string> = {
   signer:   '✍️',
@@ -18,6 +46,46 @@ export default function Step2Signers({ data, onBack, onNext }: Step2Props) {
     data.signers.length > 0 ? data.signers : [{ name: '', email: '', phone: '', role: 'signer' }]
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [recentContacts, setRecentContacts] = useState<SavedContact[]>([]);
+  const [pickerOpenIndex, setPickerOpenIndex] = useState<number | null>(null);
+  const [pickerSearch, setPickerSearch] = useState('');
+  const pickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setRecentContacts(loadRecentContacts());
+  }, []);
+
+  // Close picker when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setPickerOpenIndex(null);
+        setPickerSearch('');
+      }
+    }
+    if (pickerOpenIndex !== null) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [pickerOpenIndex]);
+
+  const filteredContacts = recentContacts.filter(c => {
+    const q = pickerSearch.toLowerCase();
+    return !q || c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q);
+  });
+
+  const applyContact = (index: number, contact: SavedContact) => {
+    const updatedSigners = [...signers];
+    updatedSigners[index] = {
+      ...updatedSigners[index],
+      name: contact.name,
+      email: contact.email,
+      phone: contact.phone || '',
+    };
+    setSigners(updatedSigners);
+    setPickerOpenIndex(null);
+    setPickerSearch('');
+  };
 
   const addSigner = () => {
     setSigners([...signers, { name: '', email: '', phone: '', role: 'signer' }]);
@@ -67,6 +135,12 @@ export default function Step2Signers({ data, onBack, onNext }: Step2Props) {
 
   const handleNext = () => {
     if (validateSigners()) {
+      // Save valid signers to recent contacts
+      signers.forEach(s => {
+        if (s.name.trim() && s.email.trim()) {
+          saveContactToRecents({ name: s.name.trim(), email: s.email.trim(), phone: s.phone?.trim() || '' });
+        }
+      });
       onNext(signers);
     }
   };
@@ -122,6 +196,57 @@ export default function Step2Signers({ data, onBack, onNext }: Step2Props) {
                 </p>
               </div>
 
+              {/* Contact picker */}
+              {recentContacts.length > 0 && (
+                <div className="relative mb-3" ref={pickerOpenIndex === index ? pickerRef : undefined}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPickerOpenIndex(pickerOpenIndex === index ? null : index);
+                      setPickerSearch('');
+                    }}
+                    className="flex items-center gap-1.5 text-xs text-primary-600 hover:text-primary-800 font-medium"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                    </svg>
+                    Choose from recent contacts
+                  </button>
+
+                  {pickerOpenIndex === index && (
+                    <div className="absolute top-6 left-0 z-20 w-72 bg-white border border-secondary-200 rounded-lg shadow-lg overflow-hidden">
+                      <div className="p-2 border-b border-secondary-100">
+                        <input
+                          type="text"
+                          value={pickerSearch}
+                          onChange={e => setPickerSearch(e.target.value)}
+                          placeholder="Search contacts..."
+                          className="w-full text-sm px-2 py-1.5 border border-secondary-200 rounded focus:outline-none focus:ring-1 focus:ring-primary-400"
+                          autoFocus
+                        />
+                      </div>
+                      <div className="max-h-48 overflow-y-auto">
+                        {filteredContacts.length === 0 ? (
+                          <p className="px-3 py-3 text-xs text-secondary-400">No contacts found</p>
+                        ) : (
+                          filteredContacts.map((contact, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => applyContact(index, contact)}
+                              className="w-full text-left px-3 py-2 hover:bg-secondary-50 transition-colors"
+                            >
+                              <div className="text-sm font-medium text-secondary-800">{contact.name}</div>
+                              <div className="text-xs text-secondary-400">{contact.email}</div>
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="space-y-4">
                 <Input
                   label={`Recipient ${index + 1} Name`}
@@ -156,8 +281,8 @@ export default function Step2Signers({ data, onBack, onNext }: Step2Props) {
           ))}
 
           <div className="flex justify-center">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={addSigner}
               className="flex items-center gap-1"
             >
