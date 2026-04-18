@@ -39,10 +39,10 @@ const comparePassword = async (password, hashedPassword) => {
  * @returns {string} - OTP
  */
 const generateOTP = (length = 6) => {
-  // Generate a random number with specified length
+  // Generate a cryptographically secure random number with specified length
   const min = Math.pow(10, length - 1);
   const max = Math.pow(10, length) - 1;
-  return Math.floor(min + Math.random() * (max - min + 1)).toString();
+  return crypto.randomInt(min, max + 1).toString();
 };
 
 /**

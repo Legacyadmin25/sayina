@@ -181,6 +181,12 @@ const protectOrSigner = async (req, res, next) => {
           return next(new ApiError(401, 'Not authorized, invalid signer token'));
         }
 
+        // Reject signers with terminal statuses
+        const invalidStatuses = ['signed', 'declined', 'cancelled'];
+        if (invalidStatuses.includes(signer.status)) {
+          return next(new ApiError(403, 'Signer access is no longer valid'));
+        }
+
         // Set signer in request
         req.signer = signer;
         req.user = { email: signer.email }; // Set minimal user info for permission checks

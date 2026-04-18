@@ -9,6 +9,21 @@ const { processPaymentNotification, validateSignature } = require('../services/p
  */
 const handlePayfastWebhook = async (req, res, next) => {
   try {
+    // Validate PayFast source IP
+    const requestIP = req.ip.replace(/^::ffff:/, ''); // Normalize IPv4-mapped IPv6
+    const ipParts = requestIP.split('.').map(Number);
+    const ipNum = (ipParts[0] << 24) + (ipParts[1] << 16) + (ipParts[2] << 8) + ipParts[3];
+    // PayFast IP ranges: 197.97.145.144/28 and 41.74.179.192/27
+    const payfastRanges = [
+      { start: (197 << 24) + (97 << 16) + (145 << 8) + 144, end: (197 << 24) + (97 << 16) + (145 << 8) + 159 },
+      { start: (41 << 24) + (74 << 16) + (179 << 8) + 192, end: (41 << 24) + (74 << 16) + (179 << 8) + 223 }
+    ];
+    const isValidIP = payfastRanges.some(range => ipNum >= range.start && ipNum <= range.end);
+    if (!isValidIP) {
+      console.error(`PayFast webhook rejected: untrusted IP ${requestIP}`);
+      return res.status(403).send('Forbidden');
+    }
+
     const data = req.body;
 
     // Basic validation
