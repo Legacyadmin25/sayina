@@ -2,6 +2,7 @@ const express = require('express');
 const { body } = require('express-validator');
 const { protect, optionalAuth } = require('../middleware/authMiddleware');
 const { validationErrorHandler } = require('../middleware/errorMiddleware');
+const { otpLimiter } = require('../middleware/rateLimitMiddleware');
 const otpController = require('../controllers/otpController');
 
 const router = express.Router();
@@ -48,6 +49,7 @@ router.post(
  */
 router.post(
   '/signing/send',
+  otpLimiter,
   [
     body('method').isIn(['sms', 'email']).withMessage('Method must be either sms or email'),
     body('destination').notEmpty().withMessage('Destination is required'),
@@ -65,6 +67,7 @@ router.post(
  */
 router.post(
   '/signing/verify',
+  otpLimiter,
   [
     body('otp').notEmpty().withMessage('OTP is required'),
     body('signer_id').isUUID().withMessage('Invalid signer ID format'),

@@ -25,6 +25,11 @@ const createApiKey = async (req, res, next) => {
       return next(new ApiError(400, 'Permissions must be an object'));
     }
 
+    // Validate expires_in format (e.g., "365 days", "30 days", "never")
+    if (expires_in !== 'never' && !/^\d+\s*(days?|hours?|minutes?)$/.test(expires_in)) {
+      return next(new ApiError(400, 'expires_in must be a valid interval like "365 days" or "never"'));
+    }
+
     // Generate API key ID
     const keyId = uuidv4();
 
@@ -39,7 +44,7 @@ const createApiKey = async (req, res, next) => {
       name,
       permissions: JSON.stringify(permissions),
       active: true,
-      expires_at: expires_in === 'never' ? null : db.raw(`NOW() + INTERVAL '${expires_in}'`)
+      expires_at: expires_in === 'never' ? null : db.raw(`NOW() + INTERVAL ?`, [expires_in])
     });
 
     // Log security event

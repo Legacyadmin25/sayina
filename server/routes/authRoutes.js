@@ -2,6 +2,7 @@ const express = require('express');
 const { body, param } = require('express-validator');
 const { protect } = require('../middleware/authMiddleware');
 const { validationErrorHandler } = require('../middleware/errorMiddleware');
+const { authLimiter } = require('../middleware/rateLimitMiddleware');
 const authController = require('../controllers/authController');
 
 const router = express.Router();
@@ -13,6 +14,7 @@ const router = express.Router();
  */
 router.post(
   '/register',
+  authLimiter,
   [
     body('email').isEmail().withMessage('Please provide a valid email'),
     body('password')
@@ -36,6 +38,7 @@ router.post(
  */
 router.post(
   '/login',
+  authLimiter,
   [
     body('email').isEmail().withMessage('Please provide a valid email'),
     body('password').notEmpty().withMessage('Password is required'),
@@ -125,6 +128,7 @@ router.post(
  */
 router.post(
   '/forgot-password',
+  authLimiter,
   [
     body('email').isEmail().withMessage('Please provide a valid email'),
     validationErrorHandler

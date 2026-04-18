@@ -28,6 +28,7 @@ const signedDocumentRoutes = require('./routes/signedDocumentRoutes');
 
 // Import schedulers
 const { scheduleUsageAlerts } = require('./schedulers/usageAlertScheduler');
+const { scheduleBackups, runBackup } = require('./schedulers/backupScheduler');
 const commentRoutes = require('./routes/commentRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const reportRoutes = require('./routes/reportRoutes');
@@ -120,6 +121,18 @@ app.use('/api/v1/signers', signerRoutes);
 app.use('/api/v1/otp', otpRoutes);
 app.use('/api/v1/billing', billingRoutes);
 app.use('/api/v1/admin/promo-codes', adminPromoRoutes);
+
+// Admin backup endpoint (requires auth + admin role)
+const { protect } = require('./middleware/authMiddleware');
+app.post('/api/v1/admin/backup', protect, async (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ success: false, message: 'Admin only' });
+  try {
+    const result = await runBackup();
+    res.json({ success: true, message: 'Backup completed', data: result });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
 app.use('/api/v1/webhooks', webhookRoutes);
 app.use('/api/v1/api-keys', apiKeyRoutes);
 app.use('/api/v1/templates', templateRoutes);
@@ -173,6 +186,8 @@ const server = app.listen(PORT, () => {
   // Initialize schedulers
   scheduleUsageAlerts();
   logger.info('Usage alert scheduler initialized');
+
+  scheduleBackups();
 });
 
 // Handle unhandled promise rejections

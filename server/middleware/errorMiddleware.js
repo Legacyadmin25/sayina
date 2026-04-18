@@ -27,10 +27,10 @@ const notFound = (req, res, next) => {
 const errorHandler = (err, req, res, next) => {
   const statusCode = err.statusCode || 500;
   
-  // Log error
+  // Log error (omit stack trace in production to avoid leaking internals)
   console.error('Error:', {
     message: err.message,
-    stack: err.stack,
+    ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
     path: req.path,
     method: req.method,
     ip: req.ip,
