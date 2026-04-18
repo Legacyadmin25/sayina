@@ -29,6 +29,7 @@ const signedDocumentRoutes = require('./routes/signedDocumentRoutes');
 // Import schedulers
 const { scheduleUsageAlerts } = require('./schedulers/usageAlertScheduler');
 const { scheduleBackups, runBackup } = require('./schedulers/backupScheduler');
+const { initReminderScheduler } = require('./schedulers/reminderScheduler');
 const commentRoutes = require('./routes/commentRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const reportRoutes = require('./routes/reportRoutes');
@@ -188,6 +189,8 @@ const server = app.listen(PORT, () => {
   logger.info('Usage alert scheduler initialized');
 
   scheduleBackups();
+
+  initReminderScheduler();
 });
 
 // Handle unhandled promise rejections
