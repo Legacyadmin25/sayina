@@ -1199,6 +1199,99 @@ const submitWizard = (req, res, next) => {
   });
 };
 
+/**
+ * @desc    Get envelope data for external signer (public, token-based)
+ * @route   GET /api/v1/signing/:token
+ * @access  Public (validated via Redis signing token)
+ */
+const getEnvelopeForSigning = async (req, res, next) => {
+  try {
+    const { token } = req.params;
+
+    // Look up signing token in Redis
+    const tokenData = await redisClient.get(`signing_token:${token}`);
+    if (!tokenData) {
+      return next(new ApiError(401, 'Not authorized, invalid token'));
+    }
+
+    const { envelope_id, signer_id, expiry } = JSON.parse(tokenData);
+
+    // Check expiry if stored in payload
+    if (expiry && new Date(expiry) < new Date()) {
+      return next(new ApiError(401, 'Signing link has expired'));
+    }
+
+    // Get envelope
+    const envelope = await db('envelopes')
+      .where({ id: envelope_id })
+      .select('id', 'name', 'status', 'org_id', 'expiry_days')
+      .first();
+
+    if (!envelope) {
+      return next(new ApiError(404, 'Envelope not found'));
+    }
+
+    if (['cancelled', 'expired'].includes(envelope.status)) {
+      return next(new ApiError(410, `This envelope has been ${envelope.status}`));
+    }
+
+    // Get signer
+    const signer = await db('signers')
+      .where({ id: signer_id, envelope_id: envelope_id })
+      .first();
+
+    if (!signer) {
+      return next(new ApiError(404, 'Signer not found'));
+    }
+
+    if (['signed', 'completed', 'declined', 'cancelled'].includes(signer.status)) {
+      return next(new ApiError(403, 'Signer access is no longer valid'));
+    }
+
+    // Get document
+    const document = await db('documents')
+      .where({ envelope_id: envelope_id })
+      .select('id', 'name', 'file_path')
+      .first();
+
+    // Get fields for this signer
+    const fields = document
+      ? await db('fields')
+          .where({ document_id: document.id, signer_id: signer_id })
+          .select('*')
+      : [];
+
+    // Check if org requires OTP
+    const org = await db('organizations')
+      .where({ id: envelope.org_id })
+      .select('require_otp')
+      .first();
+
+    const fileUrl = document ? `/uploads/${path.basename(document.file_path)}` : null;
+
+    res.status(200).json({
+      envelope: {
+        id: envelope.id,
+        name: envelope.name,
+        fileUrl,
+        orgId: envelope.org_id,
+      },
+      signer: {
+        id: signer.id,
+        name: signer.first_name
+          ? `${signer.first_name} ${signer.last_name}`
+          : signer.name || signer.email,
+        email: signer.email,
+        status: signer.status,
+      },
+      fields,
+      requiresOTP: !!(org && org.require_otp),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createEnvelope,
   getEnvelopes,
@@ -1211,4 +1304,5 @@ module.exports = {
   cancelEnvelope,
   getEnvelopeStatus,
   submitWizard,
+  getEnvelopeForSigning,
 };

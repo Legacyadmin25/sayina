@@ -12,6 +12,7 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const organizationRoutes = require('./routes/organizationRoutes');
 const envelopeRoutes = require('./routes/envelopeRoutes');
+const envelopeController = require('./controllers/envelopeController');
 const documentRoutes = require('./routes/documentRoutes');
 const fieldRoutes = require('./routes/fieldRoutes');
 const signerRoutes = require('./routes/signerRoutes');
@@ -110,6 +111,9 @@ app.get('/api/v1/db-health', async (req, res) => {
     });
   }
 });
+
+// Public signing route (no auth required — validated via Redis token)
+app.get('/api/v1/envelopes/:token/signing', envelopeController.getEnvelopeForSigning);
 
 // API routes
 app.use('/api/v1/auth', authRoutes);
