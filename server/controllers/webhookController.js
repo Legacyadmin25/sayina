@@ -31,8 +31,8 @@ const handlePayfastWebhook = async (req, res, next) => {
       return res.status(400).send('No data received');
     }
 
-    // Log the raw webhook data
-    console.log('PayFast webhook received:', JSON.stringify(data));
+    // Log webhook event (omit sensitive payment details in production)
+    console.log('PayFast webhook received:', data.m_payment_id || 'unknown');
 
     // Validate signature
     if (!validateSignature(data)) {
@@ -99,8 +99,8 @@ const handleBulkSmsWebhook = async (req, res, next) => {
       return res.status(400).send('No data received');
     }
 
-    // Log the raw webhook data
-    console.log('BulkSMS webhook received:', JSON.stringify(data));
+    // Log webhook event (omit recipient details)
+    console.log('BulkSMS webhook received:', data.id || 'unknown', data.status || 'unknown');
 
     // Extract delivery status
     const { id, status, to, error } = data;
