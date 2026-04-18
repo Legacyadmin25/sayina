@@ -3,7 +3,7 @@
  * Aligns with "try before you buy" strategy - 5 envelopes + 5 SMS
  */
 exports.up = function(knex) {
-  return knex('subscription_plans')
+  return knex('plans')
     .where('id', '11111111-1111-1111-1111-111111111111')
     .update({ sms_credits: 5 })
     .then(() => {
@@ -19,7 +19,7 @@ exports.up = function(knex) {
 };
 
 exports.down = function(knex) {
-  return knex('subscription_plans')
+  return knex('plans')
     .where('id', '11111111-1111-1111-1111-111111111111')
     .update({ sms_credits: 15 });
 };
