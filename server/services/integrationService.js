@@ -7,7 +7,7 @@
 
 const axios = require('axios');
 const { v4: uuidv4 } = require('uuid');
-const db = require('../config/db');
+const { db } = require('../config/db');
 const { logSystemEvent } = require('./loggerService');
 const { triggerWebhooks } = require('./webhookService');
 

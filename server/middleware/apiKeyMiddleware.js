@@ -1,6 +1,6 @@
 const { verifyApiKey } = require('../utils/jwtHelper');
 const { ApiError } = require('./errorMiddleware');
-const db = require('../config/db');
+const { db } = require('../config/db');
 const { logApiEvent } = require('../services/loggerService');
 const { validateTemporaryKey, markTemporaryKeyAsUsed } = require('../utils/tempKeyHelper');
 

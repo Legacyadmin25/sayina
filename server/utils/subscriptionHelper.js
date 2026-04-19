@@ -1,5 +1,5 @@
 const { ApiError } = require('../middleware/errorMiddleware');
-const db = require('../config/db');
+const { db } = require('../config/db');
 const { logPaymentEvent } = require('../services/loggerService');
 const { generatePaymentUrl, generateSubscriptionUrl } = require('./payfastHelper');
 
@@ -9,8 +9,8 @@ const { generatePaymentUrl, generateSubscriptionUrl } = require('./payfastHelper
  */
 const getSubscriptionPlans = async () => {
   try {
-    const plans = await db('subscription_plans')
-      .where('active', true)
+    const plans = await db('plans')
+      .where('is_active', true)
       .orderBy('price', 'asc');
     
     return plans;
@@ -27,9 +27,9 @@ const getSubscriptionPlans = async () => {
  */
 const getSubscriptionPlanById = async (planId) => {
   try {
-    const plan = await db('subscription_plans')
+    const plan = await db('plans')
       .where('id', planId)
-      .where('active', true)
+      .where('is_active', true)
       .first();
     
     if (!plan) {
@@ -64,7 +64,7 @@ const getCurrentSubscription = async (orgId) => {
     }
     
     // Get plan details
-    const plan = await db('subscription_plans')
+    const plan = await db('plans')
       .where('id', subscription.plan_id)
       .first();
     

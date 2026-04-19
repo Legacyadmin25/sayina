@@ -7,7 +7,7 @@
 
 const { generateTemporaryKey, cleanupExpiredTemporaryKeys } = require('../utils/tempKeyHelper');
 const { ApiError } = require('../middleware/errorMiddleware');
-const db = require('../config/db');
+const { db } = require('../config/db');
 
 /**
  * Create a temporary API key for an envelope

@@ -10,7 +10,7 @@ const fs = require('fs');
 const path = require('path');
 const csv = require('csv-parser');
 const { Readable } = require('stream');
-const db = require('../config/db');
+const { db } = require('../config/db');
 const { logSystemEvent } = require('./loggerService');
 
 /**

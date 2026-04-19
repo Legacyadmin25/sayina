@@ -20,7 +20,7 @@ const {
   isSessionParticipant
 } = require('../services/collaborationService');
 const { logSystemEvent } = require('../services/loggerService');
-const db = require('../config/db');
+const { db } = require('../config/db');
 
 /**
  * @desc    Create a collaboration session

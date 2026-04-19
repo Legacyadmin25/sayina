@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { ApiError } = require('../middleware/errorMiddleware');
-const db = require('../config/db');
+const { db } = require('../config/db');
 const { logSecurityEvent } = require('../services/loggerService');
 
 /**

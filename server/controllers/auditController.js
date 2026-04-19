@@ -1,5 +1,5 @@
 const { ApiError } = require('../middleware/errorMiddleware');
-const db = require('../config/db');
+const { db } = require('../config/db');
 const { getAuditTrail, generateAuditTrailDocument } = require('../utils/auditTrailHelper');
 const { validateDocumentDownloadToken } = require('../utils/signingUrlHelper');
 const { logSystemEvent } = require('../services/loggerService');

@@ -9,7 +9,7 @@
 const axios = require('axios');
 const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
-const db = require('../config/db');
+const { db } = require('../config/db');
 const { logSystemEvent } = require('./loggerService');
 
 /**

@@ -1261,12 +1261,6 @@ const getEnvelopeForSigning = async (req, res, next) => {
           .select('*')
       : [];
 
-    // Check if org requires OTP
-    const org = await db('organizations')
-      .where({ id: envelope.org_id })
-      .select('require_otp')
-      .first();
-
     const fileUrl = document ? `/uploads/${path.basename(document.file_path)}` : null;
 
     res.status(200).json({
@@ -1285,7 +1279,7 @@ const getEnvelopeForSigning = async (req, res, next) => {
         status: signer.status,
       },
       fields,
-      requiresOTP: !!(org && org.require_otp),
+      requiresOTP: false,
     });
   } catch (error) {
     next(error);

@@ -17,7 +17,7 @@ const {
   getOrganizationCertificates
 } = require('../services/certificateService');
 const { logSystemEvent } = require('../services/loggerService');
-const db = require('../config/db');
+const { db } = require('../config/db');
 
 /**
  * @desc    Generate a new digital certificate for a user

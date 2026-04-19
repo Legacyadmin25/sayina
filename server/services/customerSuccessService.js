@@ -6,7 +6,7 @@
  */
 
 const { v4: uuidv4 } = require('uuid');
-const db = require('../config/db');
+const { db } = require('../config/db');
 const { sendEmail } = require('../utils/emailHelper');
 const { sendSms } = require('../utils/smsHelper');
 const { logSystemEvent } = require('./loggerService');

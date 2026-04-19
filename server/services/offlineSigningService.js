@@ -10,7 +10,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { PDFDocument } = require('pdf-lib');
-const db = require('../config/db');
+const { db } = require('../config/db');
 const { logSystemEvent } = require('./loggerService');
 
 /**

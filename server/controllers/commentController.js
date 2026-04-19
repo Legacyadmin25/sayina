@@ -1,6 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
 const { ApiError } = require('../middleware/errorMiddleware');
-const db = require('../config/db');
+const { db } = require('../config/db');
 const { logSystemEvent } = require('../services/loggerService');
 const { sendEnvelopeNotification } = require('./notificationController');
 const { sanitizeInput } = require('../utils/securityHelper');

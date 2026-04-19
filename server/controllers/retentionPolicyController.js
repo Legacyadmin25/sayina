@@ -21,7 +21,7 @@ const {
   autoApplyRetentionPolicies
 } = require('../services/retentionPolicyService');
 const { logSystemEvent } = require('../services/loggerService');
-const db = require('../config/db');
+const { db } = require('../config/db');
 
 /**
  * @desc    Create a retention policy

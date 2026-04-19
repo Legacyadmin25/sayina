@@ -15,7 +15,7 @@ const {
   getOrganizationComplianceReports
 } = require('../services/complianceTrackingService');
 const { logSystemEvent } = require('../services/loggerService');
-const db = require('../config/db');
+const { db } = require('../config/db');
 
 /**
  * @desc    Assess envelope compliance

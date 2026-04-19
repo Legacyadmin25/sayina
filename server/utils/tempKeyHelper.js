@@ -7,7 +7,7 @@
 
 const crypto = require('crypto');
 const { ApiError } = require('../middleware/errorMiddleware');
-const db = require('../config/db');
+const { db } = require('../config/db');
 const { logSecurityEvent } = require('../services/loggerService');
 
 /**

@@ -6,7 +6,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const db = require('../config/db');
+const { db } = require('../config/db');
 
 // Default language
 const DEFAULT_LANGUAGE = 'en';

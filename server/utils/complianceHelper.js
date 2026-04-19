@@ -7,7 +7,7 @@
  */
 
 const { ApiError } = require('../middleware/errorMiddleware');
-const db = require('../config/db');
+const { db } = require('../config/db');
 
 /**
  * Validate that a document meets compliance requirements

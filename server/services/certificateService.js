@@ -10,7 +10,7 @@ const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const db = require('../config/db');
+const { db } = require('../config/db');
 const { logSystemEvent } = require('./loggerService');
 
 /**

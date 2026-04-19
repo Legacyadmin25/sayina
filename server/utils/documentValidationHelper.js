@@ -6,7 +6,7 @@
  */
 
 const { ApiError } = require('../middleware/errorMiddleware');
-const db = require('../config/db');
+const { db } = require('../config/db');
 
 /**
  * Get PDF metadata for an envelope, including page dimensions

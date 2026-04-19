@@ -1,7 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
 const { ApiError } = require('../middleware/errorMiddleware');
 const { generateApiKey } = require('../utils/jwtHelper');
-const db = require('../config/db');
+const { db } = require('../config/db');
 const { logSecurityEvent } = require('../services/loggerService');
 
 /**

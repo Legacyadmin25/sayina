@@ -17,7 +17,7 @@ const {
 } = require('../services/versionControlService');
 const { logSystemEvent } = require('../services/loggerService');
 const multer = require('multer');
-const db = require('../config/db');
+const { db } = require('../config/db');
 
 // Configure multer for memory storage
 const upload = multer({ 

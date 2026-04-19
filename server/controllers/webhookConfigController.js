@@ -8,7 +8,7 @@
 const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
 const { ApiError } = require('../middleware/errorMiddleware');
-const db = require('../config/db');
+const { db } = require('../config/db');
 const { logSystemEvent } = require('../services/loggerService');
 const { getWebhookDeliveryHistory, getWebhookDeliveryDetails, retryWebhookDelivery } = require('../services/webhookService');
 

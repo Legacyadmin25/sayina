@@ -1,5 +1,5 @@
 const { ApiError } = require('../middleware/errorMiddleware');
-const db = require('../config/db');
+const { db } = require('../config/db');
 const { checkRole } = require('../middleware/authMiddleware');
 
 /**

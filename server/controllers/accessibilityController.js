@@ -16,7 +16,7 @@ const {
 } = require('../services/accessibilityService');
 const { logSystemEvent } = require('../services/loggerService');
 const fs = require('fs');
-const db = require('../config/db');
+const { db } = require('../config/db');
 
 /**
  * @desc    Check document accessibility

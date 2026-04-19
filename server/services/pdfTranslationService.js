@@ -16,7 +16,7 @@ try {
 }
 const { v4: uuidv4 } = require('uuid');
 const axios = require('axios');
-const db = require('../config/db');
+const { db } = require('../config/db');
 const cacheManager = require('../utils/cacheManager');
 const documentService = require('./documentService');
 const config = require('../config/config');

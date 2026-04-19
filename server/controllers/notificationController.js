@@ -1,6 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
 const { ApiError } = require('../middleware/errorMiddleware');
-const db = require('../config/db');
+const { db } = require('../config/db');
 const { sendSMS } = require('../utils/smsHelper');
 const { checkSmsCredits, deductSmsCredits } = require('../utils/subscriptionHelper');
 const { logSystemEvent } = require('../services/loggerService');

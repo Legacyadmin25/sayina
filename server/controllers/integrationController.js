@@ -6,7 +6,7 @@
  */
 
 const { ApiError } = require('../middleware/errorMiddleware');
-const db = require('../config/db');
+const { db } = require('../config/db');
 const { logSystemEvent } = require('../services/loggerService');
 const { 
   registerIntegration, 
