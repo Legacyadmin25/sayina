@@ -39,8 +39,10 @@ const sendEmail = async (to, subject, html, attachments = []) => {
   try {
     const transporter = createTransporter();
     
+    const fromName = process.env.EMAIL_FROM_NAME || 'Sayina';
+    const fromAddress = process.env.EMAIL_FROM_ADDRESS || process.env.EMAIL_USER || 'info@sayina.co.za';
     const mailOptions = {
-      from: `"${process.env.EMAIL_FROM_NAME}" <${process.env.EMAIL_FROM_ADDRESS}>`,
+      from: `"${fromName}" <${fromAddress}>`,
       to,
       subject,
       html,

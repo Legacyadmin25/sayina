@@ -75,11 +75,24 @@ async function sendSigningReminders() {
           });
         } else {
           html = `
-            <h2>Reminder: Document Awaiting Your Signature</h2>
-            <p>Hi ${signerName},</p>
-            <p>${orgName} is waiting for you to sign "${envelopeName}".</p>
-            <p><a href="${signingUrl}">Click here to sign the document</a></p>
-            <p>If you have any questions, please contact the sender.</p>
+            <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+              <div style="background-color:#3a86ff;padding:20px;text-align:center;border-radius:5px 5px 0 0;">
+                <h2 style="color:#ffffff;margin:0;">Reminder: Document Awaiting Your Signature</h2>
+              </div>
+              <div style="padding:20px;">
+                <p>Hi ${signerName},</p>
+                <p>${orgName} is waiting for you to sign "<strong>${envelopeName}</strong>".</p>
+                <p style="text-align:center;margin:24px 0;">
+                  <a href="${signingUrl}" style="background:#3a86ff;color:#fff;padding:12px 24px;text-decoration:none;border-radius:5px;font-weight:bold;display:inline-block;">Review & Sign Document</a>
+                </p>
+                <p style="color:#666;font-size:13px;">Or copy this link into your browser:<br>${signingUrl}</p>
+                <p>If you have any questions, please contact the sender.</p>
+              </div>
+              <div style="background-color:#f8f9fa;padding:15px;text-align:center;font-size:12px;color:#666;border-top:1px solid #eee;">
+                <p>&copy; ${new Date().getFullYear()} Sayina. All rights reserved.</p>
+                <p>Powered by <strong>Sayina</strong> E-Signature Service</p>
+              </div>
+            </div>
           `;
         }
 

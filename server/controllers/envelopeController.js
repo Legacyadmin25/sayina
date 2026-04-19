@@ -1130,19 +1130,25 @@ const submitWizard = (req, res, next) => {
                 subject: `Please sign: "${origName}"`,
                 html: `
                   <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
-                    <h2 style="color:#1e3a5f;">Document Signature Request</h2>
-                    <p>Hi ${signer.name},</p>
-                    <p>You have been invited to review and sign the document: <strong>${origName}</strong></p>
-                    <p style="margin:24px 0;">
-                      <a href="${signingUrl}"
-                         style="background:#3b82f6;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;font-weight:bold;display:inline-block;">
-                        Sign Document
-                      </a>
-                    </p>
-                    <p style="color:#666;font-size:13px;">Or copy this link into your browser:<br>${signingUrl}</p>
-                    <p style="color:#666;font-size:13px;">This link expires in 30 days.</p>
-                    <hr style="border:none;border-top:1px solid #eee;margin:24px 0;">
-                    <p style="color:#999;font-size:12px;">Sayina E-Signature Platform</p>
+                    <div style="background-color:#3a86ff;padding:20px;text-align:center;border-radius:5px 5px 0 0;">
+                      <h2 style="color:#ffffff;margin:0;">Document Signature Request</h2>
+                    </div>
+                    <div style="padding:20px;">
+                      <p>Hi ${signer.name},</p>
+                      <p>You have been invited to review and sign the document: <strong>${origName}</strong></p>
+                      <p style="margin:24px 0;text-align:center;">
+                        <a href="${signingUrl}"
+                           style="background:#3a86ff;color:#fff;padding:12px 24px;text-decoration:none;border-radius:5px;font-weight:bold;display:inline-block;">
+                          Review &amp; Sign Document
+                        </a>
+                      </p>
+                      <p style="color:#666;font-size:13px;">Or copy this link into your browser:<br>${signingUrl}</p>
+                      <p style="color:#666;font-size:13px;">This signing link is unique to you and should not be shared. It expires in 30 days.</p>
+                    </div>
+                    <div style="background-color:#f8f9fa;padding:15px;text-align:center;font-size:12px;color:#666;border-top:1px solid #eee;">
+                      <p>&copy; ${new Date().getFullYear()} Sayina. All rights reserved.</p>
+                      <p>Powered by <strong>Sayina</strong> E-Signature Service</p>
+                    </div>
                   </div>`,
               },
               { headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' } }

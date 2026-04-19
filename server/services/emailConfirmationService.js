@@ -85,37 +85,38 @@ const sendOwnerConfirmationEmail = async (envelopeId, options = {}) => {
     // Build email HTML
     let html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background-color: #f8f9fa; padding: 20px; text-align: center;">
+        <div style="background-color: #3a86ff; padding: 20px; text-align: center; border-radius: 5px 5px 0 0;">
           ${envelope.logo_url ? `<img src="${envelope.logo_url}" alt="${envelope.org_name}" style="max-height: 60px;" />` : ''}
-          <h2 style="color: #333;">Document Signed: ${envelope.name}</h2>
+          <h2 style="color: #ffffff; margin: 0;">Document Signed: ${envelope.name}</h2>
         </div>
-        
+
         <div style="padding: 20px;">
           <p>Hello ${envelope.owner_name},</p>
-          
+
           <p>Your document <strong>${envelope.name}</strong> has been successfully signed by all parties and is now complete.</p>
-          
+
           ${complianceHtml}
-          
-          <div style="margin-top: 20px; display: flex; justify-content: space-between;">
-            <a href="${downloadLink}" style="background-color: #4CAF50; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; display: inline-block; margin-right: 10px;">
+
+          <div style="margin-top: 20px; text-align: center;">
+            <a href="${downloadLink}" style="background-color: #3a86ff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin-right: 10px; font-weight: bold;">
               Download Signed Document
             </a>
-            <a href="${auditLink}" style="background-color: #2196F3; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; display: inline-block;">
+            <a href="${auditLink}" style="background-color: #3a86ff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
               View Audit Trail
             </a>
           </div>
-          
+
           <p style="margin-top: 30px; font-size: 0.9em; color: #666;">
-            This email contains a legally binding electronically signed document. 
-            The document has been signed in accordance with South African Electronic Communications and Transactions Act (ECT Act 25/2002) 
+            This email contains a legally binding electronically signed document.
+            The document has been signed in accordance with South African Electronic Communications and Transactions Act (ECT Act 25/2002)
             and Protection of Personal Information Act (POPIA).
           </p>
         </div>
-        
-        <div style="background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 0.8em; color: #666;">
-          <p>&copy; ${new Date().getFullYear()} ${envelope.org_name || 'Sayina E-Signature Service'}. All rights reserved.</p>
-          <p>This is an automated message from Sayina E-Signature Service.</p>
+
+        <div style="background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 0.8em; color: #666; border-top: 1px solid #eee;">
+          <p>&copy; ${new Date().getFullYear()} ${envelope.org_name || 'Sayina'}. All rights reserved.</p>
+          <p>This is an automated message from ${envelope.org_name || 'Sayina'}.</p>
+          <p>Powered by <strong>Sayina</strong> E-Signature Service</p>
         </div>
       </div>
     `;
@@ -211,41 +212,42 @@ const sendSignerConfirmationEmail = async (envelopeId, signerId, options = {}) =
     // Build email HTML
     let html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background-color: #f8f9fa; padding: 20px; text-align: center;">
+        <div style="background-color: #3a86ff; padding: 20px; text-align: center; border-radius: 5px 5px 0 0;">
           ${signer.logo_url ? `<img src="${signer.logo_url}" alt="${signer.org_name}" style="max-height: 60px;" />` : ''}
-          <h2 style="color: #333;">Your Signed Document</h2>
+          <h2 style="color: #ffffff; margin: 0;">Your Signed Document</h2>
         </div>
-        
+
         <div style="padding: 20px;">
           <p>Hello ${signer.name},</p>
-          
+
           <p>Thank you for signing <strong>${signer.envelope_name}</strong>.</p>
-          
+
           <p>You signed this document on <strong>${complianceRecord ? new Date(complianceRecord.compliance_given_at).toLocaleString('en-ZA') : new Date().toLocaleString('en-ZA')}</strong>.</p>
-          
-          <div style="margin: 20px 0; padding: 15px; background-color: #f9f9f9; border-left: 4px solid #4CAF50;">
+
+          <div style="margin: 20px 0; padding: 15px; background-color: #f9f9f9; border-left: 4px solid #3a86ff;">
             <h4 style="margin-top: 0;">Compliance Confirmation</h4>
             <p>Your consent was recorded in accordance with South African Electronic Communications and Transactions Act (ECT Act 25/2002) and Protection of Personal Information Act (POPIA).</p>
             <p style="font-size: 0.9em; margin-bottom: 0;">This electronic signature carries the same legal weight as a handwritten signature.</p>
           </div>
-          
-          <div style="margin-top: 20px; display: flex; justify-content: space-between;">
-            <a href="${downloadLink}" style="background-color: #4CAF50; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; display: inline-block; margin-right: 10px;">
+
+          <div style="margin-top: 20px; text-align: center;">
+            <a href="${downloadLink}" style="background-color: #3a86ff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; margin-right: 10px; font-weight: bold;">
               Download Signed Document
             </a>
-            <a href="${auditLink}" style="background-color: #2196F3; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; display: inline-block;">
+            <a href="${auditLink}" style="background-color: #3a86ff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
               View Audit Trail
             </a>
           </div>
-          
+
           <p style="margin-top: 30px; font-size: 0.9em; color: #666;">
             A copy of the signed document is attached to this email for your records.
           </p>
         </div>
-        
-        <div style="background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 0.8em; color: #666;">
-          <p>&copy; ${new Date().getFullYear()} ${signer.org_name || 'Sayina E-Signature Service'}. All rights reserved.</p>
-          <p>This is an automated message from Sayina E-Signature Service.</p>
+
+        <div style="background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 0.8em; color: #666; border-top: 1px solid #eee;">
+          <p>&copy; ${new Date().getFullYear()} ${signer.org_name || 'Sayina'}. All rights reserved.</p>
+          <p>This is an automated message from ${signer.org_name || 'Sayina'}.</p>
+          <p>Powered by <strong>Sayina</strong> E-Signature Service</p>
         </div>
       </div>
     `;

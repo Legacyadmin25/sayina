@@ -607,12 +607,19 @@ const checkUsageThresholds = async () => {
               // Send email notification
               const emailHtml = `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                  <h2>Usage Alert: Envelope Limit</h2>
-                  <p>Hello ${admin.first_name},</p>
-                  <p>Your organization <strong>${org.org_name}</strong> has used <strong>${envelopesUsed}</strong> of <strong>${org.envelope_limit}</strong> available envelopes (${envelopePercentage}%) for this billing period.</p>
-                  ${threshold === 100 ? '<p><strong>You have reached your envelope limit.</strong> Additional envelopes will not be available until your next billing cycle, or you can upgrade your plan for more capacity.</p>' : '<p>Consider upgrading your plan if you expect to exceed your limit before the next billing cycle.</p>'}
-                  <p><a href="${process.env.CLIENT_URL}/account/subscription" style="background-color: #4CAF50; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; display: inline-block;">View Subscription</a></p>
-                  <p>Thank you for using Sayina E-Signature Service.</p>
+                  <div style="background-color:#3a86ff;padding:20px;text-align:center;border-radius:5px 5px 0 0;">
+                    <h2 style="color:#ffffff;margin:0;">Usage Alert: Envelope Limit</h2>
+                  </div>
+                  <div style="padding:20px;">
+                    <p>Hello ${admin.first_name},</p>
+                    <p>Your organization <strong>${org.org_name}</strong> has used <strong>${envelopesUsed}</strong> of <strong>${org.envelope_limit}</strong> available envelopes (${envelopePercentage}%) for this billing period.</p>
+                    ${threshold === 100 ? '<p><strong>You have reached your envelope limit.</strong> Additional envelopes will not be available until your next billing cycle, or you can upgrade your plan for more capacity.</p>' : '<p>Consider upgrading your plan if you expect to exceed your limit before the next billing cycle.</p>'}
+                    <p style="text-align:center;"><a href="${process.env.CLIENT_URL}/account/subscription" style="background-color: #3a86ff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">View Subscription</a></p>
+                  </div>
+                  <div style="background-color:#f8f9fa;padding:15px;text-align:center;font-size:12px;color:#666;border-top:1px solid #eee;">
+                    <p>&copy; ${new Date().getFullYear()} Sayina. All rights reserved.</p>
+                    <p>Powered by <strong>Sayina</strong> E-Signature Service</p>
+                  </div>
                 </div>
               `;
 
@@ -674,12 +681,19 @@ const checkUsageThresholds = async () => {
               // Send email notification
               const emailHtml = `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                  <h2>Usage Alert: SMS Credit Limit</h2>
-                  <p>Hello ${admin.first_name},</p>
-                  <p>Your organization <strong>${org.org_name}</strong> has used <strong>${smsUsed}</strong> of <strong>${org.sms_credits}</strong> available SMS credits (${smsPercentage}%) for this billing period.</p>
-                  ${threshold === 100 ? '<p><strong>You have reached your SMS credit limit.</strong> Additional SMS messages will not be available until your next billing cycle, or you can purchase more credits.</p>' : '<p>Consider purchasing additional SMS credits if you expect to exceed your limit before the next billing cycle.</p>'}
-                  <p><a href="${process.env.CLIENT_URL}/account/sms-topup" style="background-color: #4CAF50; color: white; padding: 10px 15px; text-decoration: none; border-radius: 4px; display: inline-block;">Purchase SMS Credits</a></p>
-                  <p>Thank you for using Sayina E-Signature Service.</p>
+                  <div style="background-color:#3a86ff;padding:20px;text-align:center;border-radius:5px 5px 0 0;">
+                    <h2 style="color:#ffffff;margin:0;">Usage Alert: SMS Credit Limit</h2>
+                  </div>
+                  <div style="padding:20px;">
+                    <p>Hello ${admin.first_name},</p>
+                    <p>Your organization <strong>${org.org_name}</strong> has used <strong>${smsUsed}</strong> of <strong>${org.sms_credits}</strong> available SMS credits (${smsPercentage}%) for this billing period.</p>
+                    ${threshold === 100 ? '<p><strong>You have reached your SMS credit limit.</strong> Additional SMS messages will not be available until your next billing cycle, or you can purchase more credits.</p>' : '<p>Consider purchasing additional SMS credits if you expect to exceed your limit before the next billing cycle.</p>'}
+                    <p style="text-align:center;"><a href="${process.env.CLIENT_URL}/account/sms-topup" style="background-color: #3a86ff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">Purchase SMS Credits</a></p>
+                  </div>
+                  <div style="background-color:#f8f9fa;padding:15px;text-align:center;font-size:12px;color:#666;border-top:1px solid #eee;">
+                    <p>&copy; ${new Date().getFullYear()} Sayina. All rights reserved.</p>
+                    <p>Powered by <strong>Sayina</strong> E-Signature Service</p>
+                  </div>
                 </div>
               `;
 
