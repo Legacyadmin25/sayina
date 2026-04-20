@@ -450,9 +450,11 @@ const getDashboardSummary = async (req, res, next) => {
       .join('envelopes', 'signers.envelope_id', 'envelopes.id')
       .where('envelopes.org_id', orgId)
       .where('signers.status', 'pending')
+      .whereNotIn('signers.role', ['cc', 'viewer'])
       .select(
         'signers.id',
-        'signers.name',
+        'signers.first_name',
+        'signers.last_name',
         'signers.email',
         'signers.created_at',
         'envelopes.id as envelope_id',
@@ -463,8 +465,10 @@ const getDashboardSummary = async (req, res, next) => {
     
     // Get user activity
     const userActivity = await db('system_logs')
-      .join('users', 'system_logs.user_id', 'users.id')
-      .where('users.org_id', orgId)
+      .leftJoin('users', 'system_logs.user_id', 'users.id')
+      .where(function() {
+        this.where('users.org_id', orgId).orWhereNull('system_logs.user_id');
+      })
       .select(
         'system_logs.id',
         'system_logs.action',
@@ -498,7 +502,10 @@ const getDashboardSummary = async (req, res, next) => {
         created_at: envelope.created_at,
         created_by: `${envelope.first_name} ${envelope.last_name}`
       })),
-      pending_signatures: pendingSignatures,
+      pending_signatures: pendingSignatures.map(s => ({
+        ...s,
+        name: `${s.first_name} ${s.last_name}`.trim(),
+      })),
       recent_activity: formattedActivity
     };
     

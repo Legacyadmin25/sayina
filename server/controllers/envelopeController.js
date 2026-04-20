@@ -207,7 +207,7 @@ const getEnvelopeById = async (req, res, next) => {
     const signers = await db('signers')
       .where({ envelope_id: id })
       .orderBy('order', 'asc')
-      .select('id', 'email', 'first_name', 'last_name', 'phone', 'role', 'order', 'status', 'signed_at', 'created_at');
+      .select('id', 'email', 'first_name', 'last_name', 'phone', 'role', 'order', 'status', 'completed_at', 'created_at');
 
     // Get events
     const events = await db('events')
@@ -1239,14 +1239,23 @@ const getEnvelopeForSigning = async (req, res, next) => {
       .select('id', 'name', 'file_path')
       .first();
 
-    // Get fields for this signer
-    const fields = document
-      ? await db('fields')
-          .where({ document_id: document.id, signer_id: signer_id })
-          .select('*')
-      : [];
+    if (!document) {
+      return next(new ApiError(404, 'Document not found for this envelope'));
+    }
 
-    const fileUrl = document ? `/uploads/${path.basename(document.file_path)}` : null;
+    // Get fields for this signer
+    const fields = await db('fields')
+      .where({ document_id: document.id, signer_id: signer_id })
+      .select('*');
+
+    // Build file URL — handle both absolute paths and relative paths
+    let fileUrl = null;
+    if (document.file_path) {
+      const basename = path.basename(document.file_path);
+      // Check if file is in a subdirectory of uploads
+      const docDir = path.basename(path.dirname(document.file_path));
+      fileUrl = docDir === 'documents' ? `/uploads/documents/${basename}` : `/uploads/${basename}`;
+    }
 
     res.status(200).json({
       envelope: {

@@ -15,7 +15,7 @@ interface Signer {
   role: string;
   order: number;
   status: string;
-  signed_at: string | null;
+  completed_at: string | null;
   created_at: string;
 }
 
@@ -306,8 +306,8 @@ export default function EnvelopeDetailPage() {
                       <p className={`text-sm font-medium capitalize ${SIGNER_STATUS_COLORS[signer.status] || 'text-secondary-500'}`}>
                         {signer.status === 'signed' || signer.status === 'completed' ? 'Signed' : signer.status}
                       </p>
-                      {signer.signed_at && (
-                        <p className="text-xs text-secondary-400">{formatDate(signer.signed_at)}</p>
+                      {signer.completed_at && (
+                        <p className="text-xs text-secondary-400">{formatDate(signer.completed_at)}</p>
                       )}
                     </div>
                   </div>
