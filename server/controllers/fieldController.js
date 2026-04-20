@@ -6,6 +6,7 @@ const { getEnvelopePdfMetadata, validateFieldPlacement } = require('../utils/doc
 const { recordAuditEvent } = require('../utils/auditTrailHelper');
 const { validateComplianceConsent, recordComplianceConsent } = require('../utils/complianceHelper');
 const emailConfirmationService = require('../services/emailConfirmationService');
+const axios = require('axios');
 const logger = require('../config/winston');
 
 /**
@@ -648,9 +649,62 @@ const submitFieldValues = async (req, res, next) => {
           updated_at: trx.fn.now()
         });
 
-      // Check if all signers have signed
+      // Notify CC/viewer recipients after the first signer signs
+      const signedCount = await trx('signers')
+        .where('envelope_id', envelope_id)
+        .whereNotIn('role', ['cc', 'viewer'])
+        .where('status', 'signed')
+        .count('id as count')
+        .first();
+
+      if (parseInt(signedCount.count) === 1) {
+        // First signer just signed — notify CC/viewer recipients
+        const ccRecipients = await trx('signers')
+          .where('envelope_id', envelope_id)
+          .whereIn('role', ['cc', 'viewer']);
+
+        const envelopeInfo = await trx('envelopes').where('id', envelope_id).first();
+        const doc = await trx('documents').where('envelope_id', envelope_id).first();
+        const docName = doc ? doc.file_name : envelopeInfo.name;
+
+        for (const cc of ccRecipients) {
+          try {
+            if (process.env.RESEND_API_KEY) {
+              await axios.post(
+                'https://api.resend.com/emails',
+                {
+                  from: process.env.EMAIL_FROM || 'Sayina <onboarding@resend.dev>',
+                  to: cc.email,
+                  subject: `Document Notification: "${docName}"`,
+                  html: `
+                    <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+                      <div style="background-color:#3a86ff;padding:20px;text-align:center;border-radius:5px 5px 0 0;">
+                        <h2 style="color:#ffffff;margin:0;">Document Notification</h2>
+                      </div>
+                      <div style="padding:20px;">
+                        <p>Hi ${cc.name || cc.first_name || ''},</p>
+                        <p>Signing is now in progress for: <strong>${docName}</strong></p>
+                        <p style="color:#666;font-size:13px;">You have been copied on this document. You will receive the final signed copy once all parties have completed signing.</p>
+                      </div>
+                      <div style="background-color:#f8f9fa;padding:15px;text-align:center;font-size:12px;color:#666;border-top:1px solid #eee;">
+                        <p>&copy; ${new Date().getFullYear()} Sayina. All rights reserved.</p>
+                        <p>Powered by <strong>Sayina</strong> E-Signature Service</p>
+                      </div>
+                    </div>`,
+                },
+                { headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' } }
+              );
+            }
+          } catch (ccErr) {
+            logger.error(`CC notification failed for ${cc.email}: ${ccErr.message}`);
+          }
+        }
+      }
+
+      // Check if all signers have signed (exclude CC/viewer recipients)
       const remainingSigners = await trx('signers')
         .where('envelope_id', envelope_id)
+        .whereNotIn('role', ['cc', 'viewer'])
         .where('status', '!=', 'signed')
         .count('id as count')
         .first();

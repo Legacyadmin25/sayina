@@ -1067,34 +1067,8 @@ const submitWizard = (req, res, next) => {
         }
       }
 
-      // ── Notify CC / viewer recipients (no signing link) ───────────────────
-      for (const signer of Object.values(signerMap)) {
-        if (signer.role !== 'cc' && signer.role !== 'viewer') continue;
-        try {
-          if (process.env.RESEND_API_KEY) {
-            await axios.post(
-              'https://api.resend.com/emails',
-              {
-                from:    process.env.EMAIL_FROM || 'Sayina <onboarding@resend.dev>',
-                to:      signer.email,
-                subject: `You have been CC'd on: "${origName}"`,
-                html: `
-                  <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
-                    <h2 style="color:#1e3a5f;">Document Notification</h2>
-                    <p>Hi ${signer.name},</p>
-                    <p>You have been copied on a document that has been sent for signing: <strong>${origName}</strong></p>
-                    <p style="color:#666;font-size:13px;">You will receive a copy once all parties have signed.</p>
-                    <hr style="border:none;border-top:1px solid #eee;margin:24px 0;">
-                    <p style="color:#999;font-size:12px;">Sayina E-Signature Platform</p>
-                  </div>`,
-              },
-              { headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' } }
-            );
-          }
-        } catch (ccEmailErr) {
-          console.error(`CC email failed for ${signer.email}:`, ccEmailErr.message);
-        }
-      }
+      // CC/viewer recipients are notified later (after the first signer signs)
+      // See fieldController.js submitFieldValues for the trigger
 
       // ── Generate signing tokens + send emails ──────────────────────────────
       const signingUrls = [];
