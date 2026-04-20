@@ -206,7 +206,8 @@ const getEnvelopeById = async (req, res, next) => {
     // Get signers
     const signers = await db('signers')
       .where({ envelope_id: id })
-      .select('id', 'email', 'first_name', 'last_name', 'order', 'status', 'created_at');
+      .orderBy('order', 'asc')
+      .select('id', 'email', 'first_name', 'last_name', 'phone', 'role', 'order', 'status', 'signed_at', 'created_at');
 
     // Get events
     const events = await db('events')
