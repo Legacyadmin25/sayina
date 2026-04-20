@@ -31,7 +31,7 @@ const createEnvelope = async (req, res, next) => {
       .join('subscriptions', 'organizations.id', 'subscriptions.org_id')
       .join('plans', 'subscriptions.plan_id', 'plans.id')
       .where('organizations.id', orgId)
-      .where('subscriptions.status', 'active')
+      .whereIn('subscriptions.status', ['active', 'promo'])
       .orderBy('subscriptions.updated_at', 'desc')
       .select('plans.envelope_limit')
       .first();
@@ -909,7 +909,7 @@ const submitWizard = (req, res, next) => {
         .join('subscriptions', 'organizations.id', 'subscriptions.org_id')
         .join('plans', 'subscriptions.plan_id', 'plans.id')
         .where('organizations.id', orgId)
-        .where('subscriptions.status', 'active')
+        .whereIn('subscriptions.status', ['active', 'promo'])
         .orderBy('subscriptions.updated_at', 'desc')
         .select('plans.envelope_limit')
         .first();

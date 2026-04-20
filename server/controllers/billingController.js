@@ -55,7 +55,8 @@ const getSubscription = async (req, res, next) => {
     const subscription = await db('subscriptions')
       .join('plans', 'subscriptions.plan_id', 'plans.id')
       .where('subscriptions.org_id', orgId)
-      .where('subscriptions.status', 'active')
+      .whereIn('subscriptions.status', ['active', 'promo'])
+      .orderBy('subscriptions.updated_at', 'desc')
       .select(
         'subscriptions.id',
         'subscriptions.status',
@@ -313,7 +314,8 @@ const getSmsCredits = async (req, res, next) => {
     const subscription = await db('subscriptions')
       .join('plans', 'subscriptions.plan_id', 'plans.id')
       .where('subscriptions.org_id', orgId)
-      .where('subscriptions.status', 'active')
+      .whereIn('subscriptions.status', ['active', 'promo'])
+      .orderBy('subscriptions.updated_at', 'desc')
       .select('plans.sms_credits')
       .first();
 
@@ -527,7 +529,7 @@ const checkUsageThresholds = async () => {
     const orgs = await db('organizations')
       .join('subscriptions', 'organizations.id', 'subscriptions.org_id')
       .join('plans', 'subscriptions.plan_id', 'plans.id')
-      .where('subscriptions.status', 'active')
+      .whereIn('subscriptions.status', ['active', 'promo'])
       .select(
         'organizations.id as org_id',
         'organizations.name as org_name',
