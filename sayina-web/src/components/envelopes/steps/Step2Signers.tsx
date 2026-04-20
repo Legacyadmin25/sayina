@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Step2Props, Signer, SignerRole, SIGNER_ROLE_LABELS } from '@/lib/types/envelope';
 
 const RECENT_CONTACTS_KEY = 'sayina_recent_contacts';
+const CONTACTS_KEY = 'sayina_contacts';
 const MAX_RECENT_CONTACTS = 20;
 
 interface SavedContact {
@@ -15,8 +16,30 @@ interface SavedContact {
 
 function loadRecentContacts(): SavedContact[] {
   try {
-    const raw = localStorage.getItem(RECENT_CONTACTS_KEY);
-    return raw ? JSON.parse(raw) : [];
+    // Merge contacts from both the recent contacts list and the contacts page
+    const recentRaw = localStorage.getItem(RECENT_CONTACTS_KEY);
+    const recentList: SavedContact[] = recentRaw ? JSON.parse(recentRaw) : [];
+
+    const contactsRaw = localStorage.getItem(CONTACTS_KEY);
+    const contactsList: SavedContact[] = contactsRaw
+      ? JSON.parse(contactsRaw).map((c: { name: string; email: string; phone?: string }) => ({
+          name: c.name,
+          email: c.email,
+          phone: c.phone || '',
+        }))
+      : [];
+
+    // Deduplicate by email, preferring recent contacts first
+    const seen = new Set<string>();
+    const merged: SavedContact[] = [];
+    for (const c of [...recentList, ...contactsList]) {
+      const key = c.email.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        merged.push(c);
+      }
+    }
+    return merged;
   } catch {
     return [];
   }

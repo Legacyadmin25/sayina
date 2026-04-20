@@ -315,6 +315,13 @@ const processPaymentNotification = async (data) => {
           .where({ org_id: orgId, plan_id: planId })
           .first();
 
+        // Deactivate any other active subscriptions for this org (handles upgrades/downgrades)
+        await db('subscriptions')
+          .where('org_id', orgId)
+          .whereNot('plan_id', planId)
+          .where('status', 'active')
+          .update({ status: 'cancelled', updated_at: db.fn.now() });
+
         if (existingSubscription) {
           // Update existing subscription
           await db('subscriptions')
