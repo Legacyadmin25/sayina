@@ -121,8 +121,12 @@ const optionalAuth = async (req, res, next) => {
         .first();
 
       // Set user in request if found and active
-      if (user && user.is_active) {
-        req.user = user;
+      if (user) {
+        const isActive = user.isActive ?? user.is_active;
+        if (isActive) {
+          user.org_id = user.orgId ?? user.org_id;
+          req.user = user;
+        }
       }
       
       next();
@@ -214,10 +218,12 @@ const protectOrSigner = async (req, res, next) => {
           return next(new ApiError(401, 'Not authorized, user not found'));
         }
 
-        // Check if user is active
-        if (!user.is_active) {
+        const isActive = user.isActive ?? user.is_active;
+        if (!isActive) {
           return next(new ApiError(401, 'Account is deactivated, please contact support'));
         }
+
+        user.org_id = user.orgId ?? user.org_id;
 
         // Set user in request
         req.user = user;

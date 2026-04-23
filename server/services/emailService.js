@@ -3,6 +3,53 @@ const fs = require('fs');
 const path = require('path');
 const handlebars = require('handlebars');
 
+const assetBaseUrlRaw = process.env.ASSET_BASE_URL || process.env.CDN_BASE_URL || process.env.CLIENT_URL || process.env.API_URL || '';
+const assetBaseUrl = assetBaseUrlRaw.replace(/\/$/, '');
+const ABSOLUTE_ASSET_PATTERN = /^(https?:|cid:|data:)/i;
+let assetBaseWarningLogged = false;
+
+const resolveOrganizationLogo = (logoPath) => {
+  if (!logoPath) {
+    return null;
+  }
+
+  const trimmed = logoPath.toString().trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (ABSOLUTE_ASSET_PATTERN.test(trimmed)) {
+    return trimmed;
+  }
+
+  let normalized = trimmed.replace(/\\/g, '/');
+  const uploadsIndex = normalized.toLowerCase().lastIndexOf('/uploads/');
+  if (uploadsIndex !== -1) {
+    normalized = normalized.substring(uploadsIndex);
+  }
+
+  if (!normalized.startsWith('/uploads/')) {
+    normalized = `/uploads/${normalized.replace(/^\/+/,'')}`;
+  }
+
+  if (!assetBaseUrl) {
+    if (!assetBaseWarningLogged) {
+      console.warn('[emailService] ASSET_BASE_URL/CLIENT_URL/API_URL not configured; email logos will be skipped to avoid leaking file paths.');
+      assetBaseWarningLogged = true;
+    }
+    return null;
+  }
+
+  return `${assetBaseUrl}${normalized}`;
+};
+
+const buildBrandingContext = (payload = {}) => {
+  return {
+    organizationName: payload.organizationName || payload.organization_name || 'Sayina',
+    organizationLogo: resolveOrganizationLogo(payload.organizationLogo || payload.organization_logo)
+  };
+};
+
 // Create reusable transporter object using SMTP transport
 const createTransporter = () => {
   return nodemailer.createTransport({
@@ -68,13 +115,14 @@ const sendEmail = async (to, subject, html, attachments = []) => {
 const sendOtpEmail = async (to, name, data) => {
   try {
     const template = loadTemplate('otp');
+    const branding = buildBrandingContext(data);
     const html = template({
       name,
       otp: data.otp,
       purpose: data.purpose,
       expiryMinutes: data.expiryMinutes,
-      organizationName: data.organizationName || 'Sayina',
-      organizationLogo: data.organizationLogo,
+      organizationName: branding.organizationName,
+      organizationLogo: branding.organizationLogo,
       year: new Date().getFullYear()
     });
     
@@ -99,11 +147,12 @@ const sendOtpEmail = async (to, name, data) => {
 const sendWelcomeEmail = async (to, name, data) => {
   try {
     const template = loadTemplate('welcome');
+    const branding = buildBrandingContext(data);
     const html = template({
       name,
       loginUrl: data.loginUrl,
-      organizationName: data.organizationName || 'Sayina',
-      organizationLogo: data.organizationLogo,
+      organizationName: branding.organizationName,
+      organizationLogo: branding.organizationLogo,
       year: new Date().getFullYear()
     });
     
@@ -128,12 +177,13 @@ const sendWelcomeEmail = async (to, name, data) => {
 const sendPasswordResetEmail = async (to, name, data) => {
   try {
     const template = loadTemplate('password-reset');
+    const branding = buildBrandingContext(data);
     const html = template({
       name,
       resetUrl: data.resetUrl,
       expiryHours: data.expiryHours,
-      organizationName: data.organizationName || 'Sayina',
-      organizationLogo: data.organizationLogo,
+      organizationName: branding.organizationName,
+      organizationLogo: branding.organizationLogo,
       year: new Date().getFullYear()
     });
     
@@ -158,6 +208,7 @@ const sendPasswordResetEmail = async (to, name, data) => {
 const sendSigningInvitation = async (to, name, data) => {
   try {
     const template = loadTemplate('signing-invitation');
+    const branding = buildBrandingContext(data);
     const html = template({
       name,
       envelopeName: data.envelope_name,
@@ -165,8 +216,8 @@ const sendSigningInvitation = async (to, name, data) => {
       customMessage: data.custom_message,
       documents: data.documents,
       signingUrl: data.signing_url,
-      organizationName: data.organization_name || 'Sayina',
-      organizationLogo: data.organization_logo,
+      organizationName: branding.organizationName,
+      organizationLogo: branding.organizationLogo,
       isReminder: data.is_reminder || false,
       year: new Date().getFullYear()
     });
@@ -196,13 +247,14 @@ const sendSigningInvitation = async (to, name, data) => {
 const sendEnvelopeCompletedEmail = async (to, name, data) => {
   try {
     const template = loadTemplate('envelope-completed');
+    const branding = buildBrandingContext(data);
     const html = template({
       name,
       envelopeName: data.envelope_name,
       documents: data.documents,
       downloadUrl: data.download_url,
-      organizationName: data.organization_name || 'Sayina',
-      organizationLogo: data.organization_logo,
+      organizationName: branding.organizationName,
+      organizationLogo: branding.organizationLogo,
       year: new Date().getFullYear()
     });
     
@@ -240,14 +292,15 @@ const sendEnvelopeCompletedEmail = async (to, name, data) => {
 const sendUserInvitationEmail = async (to, name, data) => {
   try {
     const template = loadTemplate('user-invitation');
+    const branding = buildBrandingContext(data);
     const html = template({
       name,
       inviterName: data.inviter_name,
-      organizationName: data.organization_name,
+      organizationName: branding.organizationName,
       role: data.role,
       tempPassword: data.temp_password,
       loginUrl: data.login_url,
-      organizationLogo: data.organization_logo,
+      organizationLogo: branding.organizationLogo,
       year: new Date().getFullYear()
     });
     
@@ -272,14 +325,15 @@ const sendUserInvitationEmail = async (to, name, data) => {
 const sendSubscriptionConfirmationEmail = async (to, name, data) => {
   try {
     const template = loadTemplate('subscription-confirmation');
+    const branding = buildBrandingContext(data);
     const html = template({
       name,
       planName: data.plan_name,
       amount: data.amount,
       currency: data.currency,
       nextBillingDate: data.next_billing_date,
-      organizationName: data.organization_name || 'Sayina',
-      organizationLogo: data.organization_logo,
+      organizationName: branding.organizationName,
+      organizationLogo: branding.organizationLogo,
       year: new Date().getFullYear()
     });
     
@@ -304,14 +358,15 @@ const sendSubscriptionConfirmationEmail = async (to, name, data) => {
 const sendSmsTopupConfirmationEmail = async (to, name, data) => {
   try {
     const template = loadTemplate('sms-topup-confirmation');
+    const branding = buildBrandingContext(data);
     const html = template({
       name,
       credits: data.credits,
       amount: data.amount,
       currency: data.currency,
       currentBalance: data.current_balance,
-      organizationName: data.organization_name || 'Sayina',
-      organizationLogo: data.organization_logo,
+      organizationName: branding.organizationName,
+      organizationLogo: branding.organizationLogo,
       year: new Date().getFullYear()
     });
     
