@@ -11,6 +11,8 @@ const {
 const logger = require('../config/winston');
 const { sendEmail } = require('../services/emailService');
 
+const ACTIVE_SUBSCRIPTION_STATUSES = ['active', 'promo'];
+
 /**
  * @desc    Get all available plans
  * @route   GET /api/v1/billing/plans
@@ -55,7 +57,9 @@ const getSubscription = async (req, res, next) => {
     const subscription = await db('subscriptions')
       .join('plans', 'subscriptions.plan_id', 'plans.id')
       .where('subscriptions.org_id', orgId)
-      .whereIn('subscriptions.status', ['active', 'promo'])
+      .whereIn('subscriptions.status', ACTIVE_SUBSCRIPTION_STATUSES)
+      .orderByRaw("CASE WHEN subscriptions.status = 'promo' THEN 0 ELSE 1 END")
+      .orderBy('subscriptions.updated_at', 'desc')
       .orderBy('subscriptions.updated_at', 'desc')
       .select(
         'subscriptions.id',
