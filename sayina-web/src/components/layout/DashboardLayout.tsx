@@ -11,13 +11,19 @@ interface DashboardLayoutProps {
   activePage?: ActivePage;
 }
 
+const API = process.env.NEXT_PUBLIC_API_BASE_URL || '/api/v1';
+
 export function DashboardLayout({ children, title = 'Dashboard', activePage }: DashboardLayoutProps) {
   const [userName, setUserName] = useState('');
   const [userInitials, setUserInitials] = useState('');
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [greeting, setGreeting] = useState('Good morning');
   const [isAdmin, setIsAdmin] = useState(false);
-  const [envelopeCount] = useState(0); // Will come from API in future
+  const [envelopeCount, setEnvelopeCount] = useState(0);
+  const [planName, setPlanName] = useState<string | null>(null);
+  const [planEnvelopeLimit, setPlanEnvelopeLimit] = useState<number | null>(null);
+  const [planEnvelopesUsed, setPlanEnvelopesUsed] = useState<number | null>(null);
+  const [subscriptionLoading, setSubscriptionLoading] = useState(true);
 
   useEffect(() => {
     const storedName = localStorage.getItem('sayina_user_name') || '';
@@ -33,6 +39,36 @@ export function DashboardLayout({ children, title = 'Dashboard', activePage }: D
     setIsAdmin(role === 'admin');
     const hour = new Date().getHours();
     setGreeting(hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening');
+
+    const fetchSubscriptionSummary = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setSubscriptionLoading(false);
+          return;
+        }
+        setSubscriptionLoading(true);
+        const res = await fetch(`${API}/billing/subscription`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const json = await res.json();
+        if (res.ok && json?.data?.subscription) {
+          const sub = json.data.subscription;
+          setPlanName(sub.plan_name ?? null);
+          setPlanEnvelopeLimit(sub.envelope_limit ?? null);
+          setPlanEnvelopesUsed(sub.envelopes_used ?? 0);
+          setEnvelopeCount(sub.envelopes_used ?? 0);
+        } else {
+          setPlanName(null);
+        }
+      } catch (err) {
+        setPlanName(null);
+      } finally {
+        setSubscriptionLoading(false);
+      }
+    };
+
+    fetchSubscriptionSummary();
   }, []);
 
   const firstName = userName ? userName.trim().split(' ')[0] : 'there';
@@ -132,6 +168,13 @@ export function DashboardLayout({ children, title = 'Dashboard', activePage }: D
     },
   ];
 
+  const normalizedPlanName = planName ?? 'Plan unavailable';
+  const normalizedEnvelopeLimit = planEnvelopeLimit ?? 0;
+  const normalizedEnvelopesUsed = planEnvelopesUsed ?? 0;
+  const usagePercent = normalizedEnvelopeLimit > 0
+    ? Math.min(100, Math.round((normalizedEnvelopesUsed / normalizedEnvelopeLimit) * 100))
+    : 0;
+
   const NavItem = ({ item, onClick }: { item: typeof mainNav[0] & { badge?: number | null }, onClick?: () => void }) => {
     const isActive = activePage === item.key;
     return (
@@ -203,10 +246,21 @@ export function DashboardLayout({ children, title = 'Dashboard', activePage }: D
       {/* Starter Plan + Sign Out */}
       <div className="p-4 border-t border-white/10 space-y-3">
         <div className="bg-white/10 rounded-lg px-3 py-2.5">
-          <p className="text-xs font-bold text-[#D4A832] uppercase tracking-wider">Starter Plan</p>
-          <p className="text-xs text-gray-400 mt-0.5">0/5 envelopes used</p>
+          <p className="text-xs font-bold text-[#D4A832] uppercase tracking-wider">
+            {subscriptionLoading ? 'Loading plan…' : normalizedPlanName}
+          </p>
+          <p className="text-xs text-gray-400 mt-0.5">
+            {subscriptionLoading
+              ? 'Fetching usage…'
+              : normalizedEnvelopeLimit > 0
+                ? `${normalizedEnvelopesUsed}/${normalizedEnvelopeLimit} envelopes used`
+                : 'Usage unavailable'}
+          </p>
           <div className="mt-2 h-1.5 bg-white/20 rounded-full">
-            <div className="h-1.5 bg-[#D4A832] rounded-full" style={{ width: '0%' }} />
+            <div
+              className="h-1.5 bg-[#D4A832] rounded-full transition-all duration-300"
+              style={{ width: `${subscriptionLoading ? 0 : usagePercent}%` }}
+            />
           </div>
         </div>
         <button
