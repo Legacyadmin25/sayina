@@ -8,6 +8,8 @@ const { db } = require('../config/db');
 const { ApiError } = require('../middleware/errorMiddleware');
 const { generateAndStoreOTP } = require('../services/otpService');
 
+const ACTIVE_SUBSCRIPTION_STATUSES = ['active', 'promo'];
+
 /**
  * @desc    Get organization details
  * @route   GET /api/v1/organizations
@@ -30,7 +32,9 @@ const getOrganization = async (req, res, next) => {
     const subscription = await db('subscriptions')
       .join('plans', 'subscriptions.plan_id', 'plans.id')
       .where('subscriptions.org_id', orgId)
-      .where('subscriptions.status', 'active')
+      .whereIn('subscriptions.status', ACTIVE_SUBSCRIPTION_STATUSES)
+      .orderByRaw("CASE WHEN subscriptions.status = 'promo' THEN 0 ELSE 1 END")
+      .orderBy('subscriptions.updated_at', 'desc')
       .select(
         'plans.id as plan_id',
         'plans.name as plan_name',
@@ -155,7 +159,9 @@ const updateBranding = async (req, res, next) => {
     const subscription = await db('subscriptions')
       .join('plans', 'subscriptions.plan_id', 'plans.id')
       .where('subscriptions.org_id', orgId)
-      .where('subscriptions.status', 'active')
+      .whereIn('subscriptions.status', ACTIVE_SUBSCRIPTION_STATUSES)
+      .orderByRaw("CASE WHEN subscriptions.status = 'promo' THEN 0 ELSE 1 END")
+      .orderBy('subscriptions.updated_at', 'desc')
       .select('plans.custom_branding')
       .first();
 
@@ -596,7 +602,9 @@ const checkWatermarkRequirement = async (req, res, next) => {
     const subscription = await db('subscriptions')
       .join('plans', 'subscriptions.plan_id', 'plans.id')
       .where('subscriptions.org_id', id)
-      .where('subscriptions.status', 'active')
+      .whereIn('subscriptions.status', ACTIVE_SUBSCRIPTION_STATUSES)
+      .orderByRaw("CASE WHEN subscriptions.status = 'promo' THEN 0 ELSE 1 END")
+      .orderBy('subscriptions.updated_at', 'desc')
       .select('plans.remove_watermark')
       .first();
 
@@ -645,7 +653,9 @@ const getOrganizationUsage = async (req, res, next) => {
     const subscription = await db('subscriptions')
       .join('plans', 'subscriptions.plan_id', 'plans.id')
       .where('subscriptions.org_id', orgId)
-      .where('subscriptions.status', 'active')
+      .whereIn('subscriptions.status', ACTIVE_SUBSCRIPTION_STATUSES)
+      .orderByRaw("CASE WHEN subscriptions.status = 'promo' THEN 0 ELSE 1 END")
+      .orderBy('subscriptions.updated_at', 'desc')
       .select(
         'plans.name as plan',
         'plans.envelope_limit as envelopesLimit',

@@ -7,6 +7,8 @@ const { db } = require('../config/db');
 const { ApiError } = require('../middleware/errorMiddleware');
 const { generateAndStoreOTP, verifyUserOTP } = require('../services/otpService');
 const { redisClient } = require('../config/redis');
+
+const ACTIVE_SUBSCRIPTION_STATUSES = ['active', 'promo'];
 require('dotenv').config();
 
 /**
@@ -190,7 +192,9 @@ const loginUser = async (req, res, next) => {
       subscription = await db('subscriptions')
         .join('plans', 'subscriptions.plan_id', 'plans.id')
         .where('subscriptions.org_id', orgId)
-        .where('subscriptions.status', 'active')
+        .whereIn('subscriptions.status', ACTIVE_SUBSCRIPTION_STATUSES)
+        .orderByRaw("CASE WHEN subscriptions.status = 'promo' THEN 0 ELSE 1 END")
+        .orderBy('subscriptions.updated_at', 'desc')
         .select(
           'plans.id as plan_id',
           'plans.name as plan_name',
